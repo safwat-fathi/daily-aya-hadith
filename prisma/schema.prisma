@@ -1,0 +1,230 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ContentType {
+  AYAH
+  HADITH
+  COMPANION_STORY
+  BLESSING_REMINDER
+}
+
+enum ContentStatus {
+  DRAFT
+  IN_REVIEW
+  APPROVED
+  REJECTED
+  ARCHIVED
+}
+
+enum SourceType {
+  QURAN
+  HADITH_COLLECTION
+  TAFSIR
+  ASBAB_AL_NUZUL
+  SEERAH
+  BIOGRAPHY
+  BOOK
+  WEBSITE
+  OTHER
+}
+
+enum ScheduleFrequency {
+  DAILY
+  WEEKLY
+}
+
+enum SelectionStrategy {
+  LEAST_RECENTLY_SENT
+  RANDOM_WITHOUT_REPLACEMENT
+}
+
+enum DeliveryStatus {
+  PENDING
+  SENDING
+  SENT
+  FAILED
+  SKIPPED
+}
+
+enum DeliveryTriggerType {
+  SCHEDULED
+  MANUAL
+  RETRY
+}
+
+model SlackWorkspace {
+  id                  String   @id @default(cuid())
+  slackTeamId         String   @unique
+  name                String
+  botUserId           String?
+  tokenSecretKey      String
+  isActive            Boolean  @default(true)
+  tokenLastVerifiedAt DateTime?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  subscriptions ChannelSubscription[]
+  auditEvents   AuditEvent[]
+
+  @@index([isActive])
+}
+
+model ChannelSubscription {
+  id             String   @id @default(cuid())
+  workspaceId    String
+  slackChannelId String
+  channelName    String?
+  timezone       String   @default("Africa/Cairo")
+  locale         String   @default("ar")
+  isEnabled      Boolean  @default(true)
+  footerText     String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  workspace  SlackWorkspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  streams    ScheduleStream[]
+  deliveries ContentDelivery[]
+
+  @@unique([workspaceId, slackChannelId])
+  @@index([isEnabled])
+}
+
+model ScheduleStream {
+  id                   String            @id @default(cuid())
+  subscriptionId       String
+  name                 String
+  isEnabled            Boolean           @default(true)
+  frequency            ScheduleFrequency
+  sendTime             String
+  timezone             String
+  daysOfWeek           Int[]
+  allowedContentTypes  ContentType[]
+  selectionStrategy    SelectionStrategy @default(LEAST_RECENTLY_SENT)
+  maxAutomaticAttempts Int               @default(1)
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  subscription ChannelSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  deliveries   ContentDelivery[]
+
+  @@index([isEnabled, frequency])
+  @@index([subscriptionId])
+}
+
+model ContentItem {
+  id                   String        @id @default(cuid())
+  type                 ContentType
+  status               ContentStatus @default(DRAFT)
+  locale               String        @default("ar")
+  title                String?
+  payload              Json
+  version              Int           @default(1)
+  parentContentId      String?
+  contentChecksum      String?
+  reviewerId           String?
+  reviewNote           String?
+  submittedForReviewAt DateTime?
+  approvedAt           DateTime?
+  rejectedAt           DateTime?
+  archivedAt           DateTime?
+  createdBy            String
+  updatedBy            String
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  parent     ContentItem?      @relation("ContentRevisions", fields: [parentContentId], references: [id])
+  revisions  ContentItem[]     @relation("ContentRevisions")
+  sources    ContentSource[]
+  deliveries ContentDelivery[]
+
+  @@index([status, type, locale])
+  @@index([parentContentId])
+  @@index([approvedAt])
+  @@unique([parentContentId, version])
+}
+
+model ContentSource {
+  id              String     @id @default(cuid())
+  contentId       String
+  sourceType      SourceType
+  title           String
+  author          String?
+  publisher       String?
+  edition         String?
+  volume          String?
+  page            String?
+  chapter         String?
+  referenceNumber String?
+  url             String?
+  notes           String?
+  sortOrder       Int        @default(0)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  content ContentItem @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@index([contentId, sortOrder])
+}
+
+model ContentDelivery {
+  id                String              @id @default(cuid())
+  streamId          String
+  subscriptionId    String
+  contentId         String?
+  triggerType       DeliveryTriggerType
+  status            DeliveryStatus      @default(PENDING)
+  deliveryLocalDate DateTime            @db.Date
+  idempotencyKey    String?
+  scheduledFor      DateTime?
+  reservedAt        DateTime            @default(now())
+  sendingAt         DateTime?
+  sentAt            DateTime?
+  failedAt          DateTime?
+  skippedAt         DateTime?
+  slackMessageTs    String?
+  slackChannelId    String?
+  attemptCount      Int                 @default(0)
+  nextRetryAt       DateTime?
+  lastAttemptAt     DateTime?
+  errorCode         String?
+  errorMessage      String?
+  isRetryable       Boolean?
+  renderedText      String?
+  renderedBlocks    Json?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  stream       ScheduleStream      @relation(fields: [streamId], references: [id], onDelete: Cascade)
+  subscription ChannelSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  content      ContentItem?         @relation(fields: [contentId], references: [id], onDelete: SetNull)
+
+  @@unique([streamId, deliveryLocalDate])
+  @@unique([streamId, idempotencyKey])
+  @@index([status, nextRetryAt])
+  @@index([contentId, sentAt])
+  @@index([subscriptionId, createdAt])
+}
+
+model AuditEvent {
+  id          String   @id @default(cuid())
+  workspaceId String?
+  actorId     String
+  action      String
+  entityType  String
+  entityId    String
+  requestId   String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  workspace SlackWorkspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId])
+  @@index([actorId, createdAt])
+}

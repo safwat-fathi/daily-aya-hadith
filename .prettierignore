@@ -1,0 +1,5 @@
+node_modules
+dist
+src/generated
+PLAN.md
+pnpm-lock.yaml
