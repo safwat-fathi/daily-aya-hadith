@@ -53,6 +53,16 @@ export class ContentIdParamDto {
 
 export class DeliveryHistoryQueryDto extends PaginationQueryDto {}
 
+export class ContentPreviewQueryDto {
+  @ApiPropertyOptional({
+    description: 'Render in this subscriber’s locale, as they would receive it.',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  subscriberId?: string;
+}
+
 export class AuditDateRangeDto {
   @IsOptional()
   @Type(() => String)

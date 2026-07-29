@@ -70,52 +70,59 @@ model SlackWorkspace {
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
-  subscriptions ChannelSubscription[]
+  subscribers UserSubscriber[]
+  streams     ScheduleStream[]
   auditEvents   AuditEvent[]
 
   @@index([isActive])
 }
 
-model ChannelSubscription {
-  id             String   @id @default(cuid())
-  workspaceId    String
-  slackChannelId String
-  channelName    String?
-  timezone       String   @default("Africa/Cairo")
-  locale         String   @default("ar")
-  isEnabled      Boolean  @default(true)
-  footerText     String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+model UserSubscriber {
+  id          String   @id @default(cuid())
+  workspaceId String
+  slackUserId String
+  /// Governs *when* this person is sent to: the scheduler evaluates `ScheduleStream.sendTime`
+  /// against this zone, so each subscriber receives at their own local time.
+  timezone    String   @default("Africa/Cairo")
+  /// Reserved for a future per-user language phase. It does **not** affect rendering today:
+  /// content rotation is shared, so one cycle produces one render in the stream's locale.
+  locale      String   @default("ar")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  workspace  SlackWorkspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  streams    ScheduleStream[]
+  workspace  SlackWorkspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   deliveries ContentDelivery[]
 
-  @@unique([workspaceId, slackChannelId])
-  @@index([isEnabled])
+  @@unique([workspaceId, slackUserId])
+  @@index([isActive])
 }
 
 model ScheduleStream {
-  id                   String            @id @default(cuid())
-  subscriptionId       String
-  name                 String
-  isEnabled            Boolean           @default(true)
-  frequency            ScheduleFrequency
-  sendTime             String
-  timezone             String
-  daysOfWeek           Int[]
+  id          String            @id @default(cuid())
+  workspaceId String
+  name        String
+  isEnabled   Boolean           @default(true)
+  frequency   ScheduleFrequency
+  /// Local wall-clock time, `HH:mm`, evaluated in each *subscriber's* timezone.
+  sendTime    String
+  /// Reference zone for administrative display and for subscribers with no usable timezone.
+  /// It does **not** decide when anyone is sent to — `UserSubscriber.timezone` does.
+  timezone    String
+  daysOfWeek  Int[]
+  /// Content selection filters on this locale (PLAN.md §5.14 rule 4) and the cycle renders in it.
+  locale               String            @default("ar")
   allowedContentTypes  ContentType[]
   selectionStrategy    SelectionStrategy @default(LEAST_RECENTLY_SENT)
   maxAutomaticAttempts Int               @default(1)
   createdAt            DateTime          @default(now())
   updatedAt            DateTime          @updatedAt
 
-  subscription ChannelSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
-  deliveries   ContentDelivery[]
+  workspace SlackWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  runs      DeliveryRun[]
 
   @@index([isEnabled, frequency])
-  @@index([subscriptionId])
+  @@index([workspaceId])
 }
 
 model ContentItem {
@@ -139,14 +146,20 @@ model ContentItem {
   createdAt            DateTime      @default(now())
   updatedAt            DateTime      @updatedAt
 
-  parent     ContentItem?      @relation("ContentRevisions", fields: [parentContentId], references: [id])
-  revisions  ContentItem[]     @relation("ContentRevisions")
-  sources    ContentSource[]
-  deliveries ContentDelivery[]
+  parent    ContentItem?    @relation("ContentRevisions", fields: [parentContentId], references: [id])
+  revisions ContentItem[]   @relation("ContentRevisions")
+  sources   ContentSource[]
+  runs      DeliveryRun[]
 
   @@index([status, type, locale])
   @@index([parentContentId])
   @@index([approvedAt])
+  // PostgreSQL treats every NULL parentContentId as distinct, so this only constrains
+  // revisions sharing a parent, never the root row of a family. The companion CHECK
+  // constraint ContentItem_revision_version_check (added in migration
+  // 20260728174034_content_revision_version_check, since Prisma cannot express CHECK
+  // constraints) pins roots to version 1 and revisions to version > 1, which is what makes
+  // version unique across a whole revision family. Keep both, or neither holds.
   @@unique([parentContentId, version])
 }
 
@@ -173,43 +186,83 @@ model ContentSource {
   @@index([contentId, sortOrder])
 }
 
-model ContentDelivery {
+/// One delivery cycle: a single content selection for one stream on one calendar date, fanned
+/// out to every active subscriber as `ContentDelivery` children.
+///
+/// The cycle is keyed by *calendar date*, not by absolute time. Because each subscriber is sent
+/// to at their own local `sendTime`, one `deliveryLocalDate` can span roughly 49 hours of real
+/// time across UTC+14 to UTC-11. Everyone who reaches that date receives the same content: the
+/// first subscriber to cross `sendTime` creates the run and picks the content, and every later
+/// subscriber on the same date reuses it.
+model DeliveryRun {
   id                String              @id @default(cuid())
   streamId          String
-  subscriptionId    String
+  /// Null only when the cycle was SKIPPED for lack of eligible content.
   contentId         String?
   triggerType       DeliveryTriggerType
+  /// Outcome of the *cycle*, not of any one person: PENDING (reserved), SENT (content selected
+  /// and fanned out) or SKIPPED. Whether a given subscriber actually received the message lives
+  /// on the child row — SENT here never means "everyone got it".
   status            DeliveryStatus      @default(PENDING)
   deliveryLocalDate DateTime            @db.Date
   idempotencyKey    String?
   scheduledFor      DateTime?
   reservedAt        DateTime            @default(now())
-  sendingAt         DateTime?
-  sentAt            DateTime?
-  failedAt          DateTime?
   skippedAt         DateTime?
-  slackMessageTs    String?
-  slackChannelId    String?
-  attemptCount      Int                 @default(0)
-  nextRetryAt       DateTime?
-  lastAttemptAt     DateTime?
   errorCode         String?
-  errorMessage      String?
-  isRetryable       Boolean?
+  /// Rendered once per cycle and reused for every subscriber and every retry, so a retry
+  /// resends exactly what was originally sent rather than re-rendering mutable content.
   renderedText      String?
   renderedBlocks    Json?
+  rendererVersion   String?
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
 
-  stream       ScheduleStream      @relation(fields: [streamId], references: [id], onDelete: Cascade)
-  subscription ChannelSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
-  content      ContentItem?         @relation(fields: [contentId], references: [id], onDelete: SetNull)
+  stream     ScheduleStream    @relation(fields: [streamId], references: [id], onDelete: Cascade)
+  content    ContentItem?      @relation(fields: [contentId], references: [id], onDelete: SetNull)
+  deliveries ContentDelivery[]
 
+  /// PLAN.md §2.2 at the cycle level: one content selection per stream per local date.
   @@unique([streamId, deliveryLocalDate])
+  /// Manual-send idempotency (§5.16). Nullable for scheduled runs; PostgreSQL treats each NULL
+  /// as distinct, so this only constrains manual sends, which must always supply a key.
   @@unique([streamId, idempotencyKey])
+  /// Backs least-recently-sent selection, which is a property of the cycle, not of a subscriber.
+  @@index([contentId, createdAt])
+  @@index([status, deliveryLocalDate])
+}
+
+/// One subscriber's copy of a cycle: the unit that is actually sent, failed, and retried.
+///
+/// Splitting this from `DeliveryRun` is what makes retry per person — one subscriber's
+/// permanent failure leaves the others `SENT` and is retried alone.
+model ContentDelivery {
+  id             String         @id @default(cuid())
+  runId          String
+  subscriberId   String
+  status         DeliveryStatus @default(PENDING)
+  /// The `D…` direct-message channel Slack returns for this user, not a configured channel.
+  slackChannelId String?
+  slackMessageTs String?
+  attemptCount   Int            @default(0)
+  nextRetryAt    DateTime?
+  lastAttemptAt  DateTime?
+  sendingAt      DateTime?
+  sentAt         DateTime?
+  failedAt       DateTime?
+  errorCode      String?
+  errorMessage   String?
+  isRetryable    Boolean?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  run        DeliveryRun    @relation(fields: [runId], references: [id], onDelete: Cascade)
+  subscriber UserSubscriber @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+
+  /// PLAN.md §2.2 at the person level: one send per subscriber per cycle.
+  @@unique([runId, subscriberId])
   @@index([status, nextRetryAt])
-  @@index([contentId, sentAt])
-  @@index([subscriptionId, createdAt])
+  @@index([subscriberId, createdAt])
 }
 
 model AuditEvent {

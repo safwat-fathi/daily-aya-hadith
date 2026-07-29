@@ -8,6 +8,7 @@ import {
   type ValidationErrorDetail,
 } from '../common/utils/validation-errors';
 import { toInputJsonObject } from '../common/utils/prisma-json';
+import { hasText } from '../common/utils/text';
 import { contentValidationFailed } from './content.errors';
 import {
   AyahPayloadDto,
@@ -46,10 +47,6 @@ export interface ApprovalContent {
   sources: ApprovalSource[];
 }
 
-function hasText(value: string | undefined): value is string {
-  return typeof value === 'string' && value.trim().length > 0;
-}
-
 function requiredField(
   details: ValidationErrorDetail[],
   field: string,
@@ -77,16 +74,58 @@ function requireSourceType(
   }
 }
 
+/**
+ * Validation is expressed as non-throwing collectors returning this union, with the throwing
+ * `validate*` methods as thin wrappers over them. Preview must report what would block
+ * approval *without* rejecting the request (PLAN.md §9.2), and Phase 4 needs the same
+ * non-throwing answer to explain why an item is ineligible for delivery.
+ */
+type ValidationOutcome =
+  | { readonly ok: true; readonly normalized: Prisma.InputJsonObject }
+  | { readonly ok: false; readonly issues: ValidationErrorDetail[] };
+
 @Injectable()
 export class ContentValidationService {
   async validateDraft(type: ContentType, payload: unknown): Promise<Prisma.InputJsonObject> {
+    const outcome = await this.collectDraftOutcome(type, payload);
+
+    if (!outcome.ok) {
+      throw contentValidationFailed(outcome.issues);
+    }
+
+    return outcome.normalized;
+  }
+
+  async validateForApproval(content: ApprovalContent): Promise<Prisma.InputJsonObject> {
+    const outcome = await this.collectApprovalOutcome(content);
+
+    if (!outcome.ok) {
+      throw contentValidationFailed(outcome.issues);
+    }
+
+    return outcome.normalized;
+  }
+
+  /** Everything that would block approval, or an empty array when approval would succeed. */
+  async collectApprovalIssues(content: ApprovalContent): Promise<ValidationErrorDetail[]> {
+    const outcome = await this.collectApprovalOutcome(content);
+    return outcome.ok ? [] : outcome.issues;
+  }
+
+  private async collectDraftOutcome(
+    type: ContentType,
+    payload: unknown,
+  ): Promise<ValidationOutcome> {
     if (typeof payload !== 'object' || payload === null || Array.isArray(payload)) {
-      throw contentValidationFailed([
-        {
-          field: 'payload',
-          message: 'payload must be an object',
-        },
-      ]);
+      return {
+        ok: false,
+        issues: [
+          {
+            field: 'payload',
+            message: 'payload must be an object',
+          },
+        ],
+      };
     }
 
     const PayloadDto = PAYLOAD_DTO_BY_TYPE[type];
@@ -98,16 +137,22 @@ export class ContentValidationService {
     });
 
     if (errors.length > 0) {
-      throw contentValidationFailed(flattenValidationErrors(errors, 'payload'));
+      return { ok: false, issues: flattenValidationErrors(errors, 'payload') };
     }
 
-    return toInputJsonObject(instance);
+    return { ok: true, normalized: toInputJsonObject(instance) };
   }
 
-  async validateForApproval(content: ApprovalContent): Promise<Prisma.InputJsonObject> {
-    const normalizedPayload = await this.validateDraft(content.type, content.payload);
+  private async collectApprovalOutcome(content: ApprovalContent): Promise<ValidationOutcome> {
+    const draft = await this.collectDraftOutcome(content.type, content.payload);
+
+    // A structurally invalid payload cannot be checked against the approval rules at all.
+    if (!draft.ok) {
+      return draft;
+    }
+
     const PayloadDto = PAYLOAD_DTO_BY_TYPE[content.type];
-    const payload = plainToInstance(PayloadDto, normalizedPayload);
+    const payload = plainToInstance(PayloadDto, draft.normalized);
     const details: ValidationErrorDetail[] = [];
 
     if (content.sources.length === 0) {
@@ -142,10 +187,10 @@ export class ContentValidationService {
     }
 
     if (details.length > 0) {
-      throw contentValidationFailed(details);
+      return { ok: false, issues: details };
     }
 
-    return normalizedPayload;
+    return { ok: true, normalized: draft.normalized };
   }
 
   private validateAyahApproval(

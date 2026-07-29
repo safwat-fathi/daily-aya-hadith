@@ -14,6 +14,7 @@ export interface AppEnvironment {
   LOG_LEVEL: LogLevel;
   SLACK_BOT_TOKEN?: string;
   SLACK_TOKEN_SECRET_KEY?: string;
+  SLACK_APP_TOKEN?: string;
   SCHEDULER_ENABLED: boolean;
   SCHEDULER_INTERVAL_MINUTES: number;
   SCHEDULER_LOCK_ID: number;
@@ -48,6 +49,7 @@ const environmentSchema = Joi.object<AppEnvironment>({
     .default('info'),
   SLACK_BOT_TOKEN: Joi.string().allow('').optional(),
   SLACK_TOKEN_SECRET_KEY: Joi.string().allow('').optional(),
+  SLACK_APP_TOKEN: Joi.string().allow('').optional(),
   SCHEDULER_ENABLED: Joi.boolean().truthy('true').falsy('false').default(false),
   SCHEDULER_INTERVAL_MINUTES: Joi.number().integer().min(1).max(60).default(5),
   SCHEDULER_LOCK_ID: Joi.number().integer().min(1).default(874321),

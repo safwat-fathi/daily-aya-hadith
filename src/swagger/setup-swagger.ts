@@ -2,6 +2,10 @@ import type { INestApplication } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import {
+  ContentPreviewResponseDto,
+  ValidationErrorDetailDto,
+} from '../content/dto/content-preview-response.dto';
+import {
   ContentDetailResponseDto,
   ContentSourceResponseDto,
   ContentSummaryResponseDto,
@@ -13,6 +17,9 @@ import {
   HadithPayloadDto,
 } from '../content/dto/payloads.dto';
 import type { AppEnvironment } from '../config/env.validation';
+import { SlackTestMessageResponseDto } from '../slack/dto/slack-test-message.dto';
+import { SubscriberResponseDto } from '../subscribers/dto/subscriber.dto';
+import { VerifyTokenResponseDto, WorkspaceResponseDto } from '../workspaces/dto/workspace.dto';
 
 export function configureSwagger(app: INestApplication): void {
   const config = app.get(ConfigService<AppEnvironment, true>);
@@ -46,6 +53,12 @@ export function configureSwagger(app: INestApplication): void {
       ContentSourceResponseDto,
       ContentSummaryResponseDto,
       ContentDetailResponseDto,
+      ValidationErrorDetailDto,
+      ContentPreviewResponseDto,
+      WorkspaceResponseDto,
+      VerifyTokenResponseDto,
+      SubscriberResponseDto,
+      SlackTestMessageResponseDto,
     ],
   });
 

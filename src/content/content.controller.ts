@@ -8,12 +8,15 @@ import {
 } from '@nestjs/swagger';
 import { RequestId } from '../common/decorators/request-id.decorator';
 import type { PaginatedResponse } from '../common/dto/pagination.dto';
+import { ContentPreviewService, type ContentPreviewResult } from './content-preview.service';
 import type { ContentDetail, ContentSummary } from './content.select';
 import { ContentService } from './content.service';
+import { ContentPreviewResponseDto } from './dto/content-preview-response.dto';
 import { ContentDetailResponseDto, ContentSummaryResponseDto } from './dto/content-response.dto';
 import { CreateContentDto } from './dto/create-content.dto';
 import {
   ContentIdParamDto,
+  ContentPreviewQueryDto,
   DeliveryHistoryQueryDto,
   ListContentQueryDto,
 } from './dto/content-query.dto';
@@ -24,7 +27,10 @@ import { UpdateContentDto } from './dto/update-content.dto';
 @ApiSecurity('admin-key')
 @Controller('content')
 export class ContentController {
-  constructor(private readonly contentService: ContentService) {}
+  constructor(
+    private readonly contentService: ContentService,
+    private readonly previewService: ContentPreviewService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a draft content item' })
@@ -78,6 +84,16 @@ export class ContentController {
     @RequestId() requestId: string,
   ): Promise<ContentDetail> {
     return this.contentService.revise(params.id, dto, requestId);
+  }
+
+  @Get(':id/preview')
+  @ApiOperation({ summary: 'Render the Slack message for a content item without sending it' })
+  @ApiOkResponse({ type: ContentPreviewResponseDto })
+  preview(
+    @Param() params: ContentIdParamDto,
+    @Query() query: ContentPreviewQueryDto,
+  ): Promise<ContentPreviewResult> {
+    return this.previewService.preview(params.id, query.subscriberId);
   }
 
   @Get(':id/deliveries')

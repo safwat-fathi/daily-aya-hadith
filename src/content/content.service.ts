@@ -11,8 +11,10 @@ import { contentNotFound, contentUpdateConflict, invalidStatusTransition } from 
 import {
   contentDetailArgs,
   contentSummarySelect,
+  deliveryHistoryArgs,
   type ContentDetail,
   type ContentSummary,
+  type DeliveryHistoryEntry,
 } from './content.select';
 import { CreateContentDto } from './dto/create-content.dto';
 import { ContentSort, DeliveryHistoryQueryDto, ListContentQueryDto } from './dto/content-query.dto';
@@ -340,7 +342,7 @@ export class ContentService {
   async deliveryHistory(
     id: string,
     query: DeliveryHistoryQueryDto,
-  ): Promise<PaginatedResponse<Prisma.ContentDeliveryGetPayload<object>>> {
+  ): Promise<PaginatedResponse<DeliveryHistoryEntry>> {
     const exists = await this.prisma.contentItem.findUnique({
       where: { id },
       select: { id: true },
@@ -349,11 +351,15 @@ export class ContentService {
       throw contentNotFound(id);
     }
 
-    const where: Prisma.ContentDeliveryWhereInput = { contentId: id };
+    // A delivery is now one message to one subscriber, and the content it carried is recorded on
+    // the parent cycle, so "who received this item" reads through the run. The run is included
+    // because the delivery row alone no longer says which content or which date it belonged to.
+    const where: Prisma.ContentDeliveryWhereInput = { run: { contentId: id } };
     const skip = (query.page - 1) * query.limit;
     const [items, total] = await this.prisma.$transaction([
       this.prisma.contentDelivery.findMany({
         where,
+        ...deliveryHistoryArgs,
         orderBy: { createdAt: 'desc' },
         skip,
         take: query.limit,

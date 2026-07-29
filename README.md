@@ -3,16 +3,28 @@
 NestJS service for delivering locally stored, human-reviewed Islamic content to Slack. The
 implementation follows the phases in [`PLAN.md`](./PLAN.md).
 
-This repository currently contains **Phases 1 and 2**:
+This repository contains **Phases 1 to 3**, and Phase 4 is in progress:
 
 - **Phase 1** — application configuration, structured logging, Prisma/PostgreSQL integration,
   the database schema, health probes, and global admin API-key protection.
 - **Phase 2** — content CRUD, type-specific payload validation, structured source references,
   the review workflow (submit, approve, reject), revisioning, archiving, delivery-history
   reads, an administrative audit trail, and Swagger/OpenAPI documentation.
+- **Phase 3** — Slack Block Kit renderers for all four content types, a preview endpoint,
+  the Slack client provider, workspace token verification, normalized Slack error mapping,
+  per-user subscribers, and a diagnostic connectivity endpoint.
 
-Slack posting (Phase 3), scheduling and delivery (Phase 4), and the reviewed seed content
-library (Phase 5) are intentionally not implemented yet.
+Delivery is **per-user direct message, not per-channel**. There is no channel subscription
+concept: a Slack user opts in by sending `/subscribe` (or the word "subscribe") to the bot in a
+direct message, and every scheduled or manual send goes to that user's DM. This is a deliberate
+pivot from an earlier channel-broadcast design; see [Subscriber model](#subscriber-model) below.
+
+**Phase 4** has started with its schema slice: delivery is now modelled per subscriber rather
+than per channel post, so duplicate prevention and retry work per person (see
+[Delivery model](#delivery-model)). The scheduler, streams API, content selection, and the send
+path that would populate those tables are still to come, so nothing is delivered automatically
+yet — Slack posting today happens only through the diagnostic connectivity endpoint, which sends
+a fixed message and never delivers content. The reviewed seed content library is Phase 5.
 
 ## Prerequisites
 
@@ -72,18 +84,44 @@ X-Admin-Key: <ADMIN_API_KEY>
 
 ### Content
 
-| Method  | Path                        | Description                                                        |
-| ------- | --------------------------- | ------------------------------------------------------------------ |
-| `POST`  | `/content`                  | Create a draft                                                     |
-| `GET`   | `/content`                  | List with `type`, `status`, `locale`, `search`, `sort`, pagination |
-| `GET`   | `/content/:id`              | Content with sources and revision history                          |
-| `PATCH` | `/content/:id`              | Edit a `DRAFT` or `REJECTED` item                                  |
-| `POST`  | `/content/:id/submit-review`| `DRAFT` → `IN_REVIEW`                                              |
-| `POST`  | `/content/:id/approve`      | `IN_REVIEW` → `APPROVED`, enforces approval validation             |
-| `POST`  | `/content/:id/reject`       | `IN_REVIEW` → `REJECTED`, requires a review note                   |
-| `POST`  | `/content/:id/archive`      | `APPROVED` → `ARCHIVED`                                            |
-| `POST`  | `/content/:id/revise`       | New `DRAFT` revision from `APPROVED` or `ARCHIVED` content         |
-| `GET`   | `/content/:id/deliveries`   | Paginated delivery history                                         |
+| Method  | Path                         | Description                                                        |
+| ------- | ---------------------------- | ------------------------------------------------------------------ |
+| `POST`  | `/content`                   | Create a draft                                                     |
+| `GET`   | `/content`                   | List with `type`, `status`, `locale`, `search`, `sort`, pagination |
+| `GET`   | `/content/:id`               | Content with sources and revision history                          |
+| `PATCH` | `/content/:id`               | Edit a `DRAFT` or `REJECTED` item                                  |
+| `POST`  | `/content/:id/submit-review` | `DRAFT` → `IN_REVIEW`                                              |
+| `POST`  | `/content/:id/approve`       | `IN_REVIEW` → `APPROVED`, enforces approval validation             |
+| `POST`  | `/content/:id/reject`        | `IN_REVIEW` → `REJECTED`, requires a review note                   |
+| `POST`  | `/content/:id/archive`       | `APPROVED` → `ARCHIVED`                                            |
+| `POST`  | `/content/:id/revise`        | New `DRAFT` revision from `APPROVED` or `ARCHIVED` content         |
+| `GET`   | `/content/:id/preview`       | Render the Slack message without sending it                        |
+| `GET`   | `/content/:id/deliveries`    | Paginated delivery history                                         |
+
+### Workspaces and subscribers
+
+| Method  | Path                           | Description                                          |
+| ------- | ------------------------------ | ---------------------------------------------------- |
+| `POST`  | `/workspaces`                  | Register the manually configured Slack workspace     |
+| `GET`   | `/workspaces`                  | List workspaces, filterable by `isActive`            |
+| `GET`   | `/workspaces/:id`              | Get a workspace                                      |
+| `PATCH` | `/workspaces/:id`              | Update name, token alias, or active state            |
+| `POST`  | `/workspaces/:id/verify-token` | Slack `auth.test`; stores bot user and verified time |
+| `POST`  | `/subscribers`                 | Register a subscriber; `isActive` defaults to `true` |
+| `GET`   | `/subscribers`                 | List, filterable by `workspaceId` and `isActive`     |
+| `GET`   | `/subscribers/:id`             | Get a subscriber                                     |
+| `PATCH` | `/subscribers/:id`             | Update timezone, locale, or active state             |
+| `POST`  | `/slack/test-message`          | Post a fixed connectivity check to a user's DM       |
+
+`slackTeamId` is immutable once a workspace is created — it is the identity the verified token
+is checked against.
+
+In normal operation subscribers are **not created through this API** — a user opts in by
+messaging the bot directly (see [Subscriber model](#subscriber-model)), and the Slack events
+module creates or reactivates the `UserSubscriber` row automatically. These endpoints exist for
+administrative visibility, and for registering a subscriber ahead of time (for example, to test
+a delivery before asking someone to opt in). There is no channel access to verify: posting to a
+Slack user ID opens or reuses that user's direct message with the bot.
 
 `GET /audit-events` lists the immutable audit trail, filterable by `actorId`, `action`,
 `entityType`, `entityId`, `dateFrom`, and `dateTo`.
@@ -107,6 +145,117 @@ entirely: status, checksum, and the audit trail are left untouched.
 Approved content is not edited in place. `POST /content/:id/revise` creates a new `DRAFT` row
 linked to the root item through `parentContentId` with an incremented `version`, preserving
 the original and its delivery history.
+
+### Rendering and preview
+
+`GET /content/:id/preview` returns the exact Slack message an item would produce, without
+posting anything and without creating a delivery record. It works for content in **any**
+status, so an editor can see a draft take shape:
+
+```json
+{
+  "rendererVersion": "ayah-v1",
+  "text": "plain-text notification fallback",
+  "blocks": [],
+  "warnings": ["limit.section_split"],
+  "approvalIssues": [
+    { "field": "payload.arabicText", "message": "arabicText is required for approval" }
+  ]
+}
+```
+
+The two lists answer different questions. `warnings` describe how the message will render
+(`limit.section_split`, `limit.block_count`, `limit.soft_budget`, `render.missing_primary_text`,
+`render.no_sources`, `render.payload_not_object`, `render.url_not_linkable`). `approvalIssues`
+describe what would block approval. Both are advisory here; preview never rejects.
+
+Paste the `blocks` array into [Slack's Block Kit Builder](https://app.slack.com/block-kit-builder)
+to confirm it renders as intended.
+
+Renderer guarantees:
+
+- Stored Quran and hadith Arabic reaches Slack **byte-identical**. The only transformation is
+  Slack's three-character escape (`&` → `&amp;`, `<` → `&lt;`, `>` → `&gt;`), and Arabic script
+  contains none of those characters. Nothing is normalized, trimmed, or truncated.
+- Religious text is emitted as its own block with no surrounding mrkdwn markers, so a literal
+  `*` or `_` in the stored text cannot alter the rendering.
+- Text longer than a Slack block limit is **split across blocks and flagged**, never truncated.
+  Splitting preserves every character.
+- Empty and blank sections are omitted entirely, so a partially filled draft produces a short
+  message rather than empty headings.
+- Hadith grading is shown only when stored, attributed to the stored grader, with no wording the
+  application invents. An occasion of revelation is shown only when a summary is stored, and its
+  scope qualifier only when the stored boolean states it.
+- A source URL becomes a link only when it parses as `http`/`https`; otherwise the citation is
+  plain text and `render.url_not_linkable` is reported.
+
+Renderer versions (`ayah-v1`, `hadith-v1`, `companion-story-v1`, `blessing-reminder-v1`) are
+returned with every preview and change only when block structure changes, never for wording.
+
+## Subscriber model
+
+Content is delivered to individual Slack users who have opted in, not to a channel. There is no
+"invite the bot to a channel" step and no channel-access verification anywhere in this flow:
+`chat.postMessage` to a Slack user ID (`U…`) opens or reuses that user's direct message with the
+bot automatically.
+
+Users opt in themselves once the app is installed and Socket Mode is running:
+
+- Sending the `/subscribe` slash command, or the plain word `subscribe` as a direct message,
+  creates (or reactivates) a `UserSubscriber` row for that Slack user.
+- `/unsubscribe`, or the word `unsubscribe`, sets it inactive.
+- Repeating the same command is a no-op: one row per `(workspaceId, slackUserId)`, enforced by
+  a unique index, is created or updated — never duplicated.
+
+This is handled by `SlackEventsService` over **Socket Mode** (`@slack/socket-mode`), which needs
+no public URL or ngrok tunnel — the app opens an outbound WebSocket connection to Slack and
+receives events over it. If `SLACK_APP_TOKEN` is unset, this connection is skipped, a warning is
+logged once, and slash commands are simply never received; everything else in the API keeps
+working.
+
+## Slack setup
+
+1. Create a Slack app.
+2. **Enable Socket Mode** and generate an app-level token (`xapp-…`) with the `connections:write`
+   scope. Put it in `SLACK_APP_TOKEN`.
+3. **Slash Commands** — create `/subscribe` and `/unsubscribe`. The Request URL field is ignored
+   under Socket Mode, but the commands must still be declared here or Slack rejects them locally
+   with "not a valid command" before your app ever sees them.
+4. **Event Subscriptions** — enable, and under _Subscribe to bot events_ add `message.im`. This
+   is required only for the plain-text `subscribe`/`unsubscribe` DM path; the slash commands
+   don't need it.
+5. **OAuth & Permissions** — add bot scopes `chat:write` (to post) and `im:history` (to read the
+   plain-text DM path). Install (or reinstall after adding scopes) and copy the `xoxb-…` bot
+   token into `SLACK_BOT_TOKEN`.
+6. Choose any alias for `SLACK_TOKEN_SECRET_KEY`. It is an identifier, never a credential.
+7. `POST /workspaces` with `slackTeamId` and `tokenSecretKey` set to that same alias, then
+   `POST /workspaces/:id/verify-token`.
+8. Start (or restart) the app and confirm the log line `Connected to Slack Socket Mode.`
+9. In Slack, message the app directly and send `/subscribe` (or the word `subscribe`).
+
+The raw bot token is never stored in the database: the workspace row holds only the alias, which
+the Slack client resolves against `SLACK_TOKEN_SECRET_KEY`. `POST /workspaces` rejects a
+`tokenSecretKey` beginning with `xox` to stop a token being pasted into the column.
+
+### Slack error codes
+
+| Code                             | Status | Meaning                                                       |
+| -------------------------------- | ------ | ------------------------------------------------------------- |
+| `SLACK_NOT_CONFIGURED`           | 503    | No token configured, or the workspace alias does not match it |
+| `SLACK_TOKEN_INVALID`            | 502    | Slack rejected the token                                      |
+| `SLACK_TOKEN_WORKSPACE_MISMATCH` | 409    | The token belongs to a different Slack workspace              |
+| `SLACK_SEND_FAILED`              | 502    | Posting failed; 503 instead when the failure is retryable     |
+| `WORKSPACE_INACTIVE`             | 409    | The workspace record is disabled                              |
+| `SUBSCRIBER_NOT_FOUND`           | 404    | No subscriber with that ID                                    |
+| `SUBSCRIBER_ALREADY_EXISTS`      | 409    | That Slack user is already registered for this workspace      |
+
+These carry `details.reason` with the underlying Slack code and `details.retryable`;
+rate-limited failures also carry `details.retryAfterSeconds`. Slack's own error text is never
+forwarded — the message is written by this application, because Slack error payloads can echo
+request contents.
+
+The application starts normally with no Slack credentials. Content, review, preview and health
+all work; only Slack operations fail, with `503 SLACK_NOT_CONFIGURED`.
 
 ### Swagger
 
@@ -136,25 +285,34 @@ must have a committed migration. Production deployments should run `pnpm db:migr
 
 ## Environment variables
 
-| Variable                     | Behavior                                      | Description                                                                |
-| ---------------------------- | --------------------------------------------- | -------------------------------------------------------------------------- |
-| `NODE_ENV`                   | Optional, defaults to `development`           | `development`, `test`, or `production`                                     |
-| `PORT`                       | Optional, defaults to `3000`                  | HTTP port                                                                  |
-| `APP_BASE_URL`               | Optional, defaults to `http://localhost:3000` | Public application URL                                                     |
-| `DATABASE_URL`               | Required                                      | PostgreSQL connection URL                                                  |
-| `ADMIN_API_KEY`              | Required, minimum 32 characters               | Secret accepted through `X-Admin-Key`                                      |
-| `DEFAULT_TIMEZONE`           | Optional, defaults to `Africa/Cairo`          | Valid IANA timezone                                                        |
-| `DEFAULT_LOCALE`             | Optional, defaults to `ar`                    | Initial content locale                                                     |
+| Variable                     | Behavior                                      | Description                                                                 |
+| ---------------------------- | --------------------------------------------- | --------------------------------------------------------------------------- |
+| `NODE_ENV`                   | Optional, defaults to `development`           | `development`, `test`, or `production`                                      |
+| `PORT`                       | Optional, defaults to `3000`                  | HTTP port                                                                   |
+| `APP_BASE_URL`               | Optional, defaults to `http://localhost:3000` | Public application URL                                                      |
+| `DATABASE_URL`               | Required                                      | PostgreSQL connection URL                                                   |
+| `ADMIN_API_KEY`              | Required, minimum 32 characters               | Secret accepted through `X-Admin-Key`                                       |
+| `DEFAULT_TIMEZONE`           | Optional, defaults to `Africa/Cairo`          | Valid IANA timezone                                                         |
+| `DEFAULT_LOCALE`             | Optional, defaults to `ar`                    | Initial content locale                                                      |
 | `LOG_LEVEL`                  | Optional, defaults to `info`                  | Pino level: `fatal`, `error`, `warn`, `info`, `debug`, `trace`, or `silent` |
-| `SWAGGER_ENABLED`            | Optional, defaults to `false`                 | Serves OpenAPI docs; ignored in production                                 |
-| `SLACK_BOT_TOKEN`            | Optional until Phase 3                        | Slack bot token; redacted if logged                                        |
-| `SLACK_TOKEN_SECRET_KEY`     | Optional until Phase 3                        | Identifier for stored Slack token material                                 |
-| `SCHEDULER_ENABLED`          | Optional, defaults to `false`                 | Phase 4 scheduler switch                                                   |
-| `SCHEDULER_INTERVAL_MINUTES` | Optional, defaults to `5`                     | Phase 4 scheduler interval                                                 |
-| `SCHEDULER_LOCK_ID`          | Optional, defaults to `874321`                | Phase 4 PostgreSQL advisory-lock ID                                        |
+| `SWAGGER_ENABLED`            | Optional, defaults to `false`                 | Serves OpenAPI docs; ignored in production                                  |
+| `SLACK_BOT_TOKEN`            | Required for any Slack operation              | Slack bot token (`xoxb-…`); redacted if logged                              |
+| `SLACK_TOKEN_SECRET_KEY`     | Required for any Slack operation              | Token alias, never a credential; must equal the workspace `tokenSecretKey`  |
+| `SLACK_APP_TOKEN`            | Required for `/subscribe` and `/unsubscribe`  | App-level token (`xapp-…`) for Socket Mode; redacted if logged              |
+| `SCHEDULER_ENABLED`          | Optional, defaults to `false`                 | Phase 4 scheduler switch                                                    |
+| `SCHEDULER_INTERVAL_MINUTES` | Optional, defaults to `5`                     | Phase 4 scheduler interval                                                  |
+| `SCHEDULER_LOCK_ID`          | Optional, defaults to `874321`                | Phase 4 PostgreSQL advisory-lock ID                                         |
 
 Configuration is validated before application startup. Validation errors name invalid fields
 but do not include their values.
+
+All three Slack variables remain optional to the validator so the application boots without a
+Slack app. When `SLACK_BOT_TOKEN`/`SLACK_TOKEN_SECRET_KEY` are blank, startup logs one warning
+and every Slack endpoint returns `503 SLACK_NOT_CONFIGURED`. When `SLACK_APP_TOKEN` is blank,
+startup logs a separate warning and Socket Mode simply never connects — slash commands and DM
+opt-ins are never received, but the rest of the API is unaffected. Slack request timeouts and
+retry behavior are fixed constants, not environment variables: retries are the delivery
+records' responsibility, not the SDK's.
 
 ## Logging and errors
 
@@ -180,39 +338,65 @@ redacted. API errors use the normalized form:
 
 The migrations create the complete extensible MVP data model:
 
-- Slack workspaces and channel subscriptions
+- Slack workspaces and per-user subscribers
 - Scheduled streams
 - Versioned content items and structured sources
-- Delivery records with rendered snapshots and database uniqueness constraints
+- Delivery cycles with rendered snapshots, and one delivery record per subscriber
 - Administrative audit events
 
-| Migration                                    | Contents                                             |
-| -------------------------------------------- | ---------------------------------------------------- |
-| `20260728095425_init`                        | Full initial schema                                  |
-| `20260728160216_content_revision_version_unique` | `UNIQUE (parentContentId, version)` on `ContentItem` |
+### Delivery model
 
-The schema supports all four content types, but no content is delivered anywhere yet.
+Delivery is two levels, because a stream sends to many people at once:
+
+- **`DeliveryRun`** — one cycle: a single content selection for one stream on one calendar date,
+  rendered once. `@@unique([streamId, deliveryLocalDate])` guarantees a stream picks content only
+  once per date, so everyone reaching that date receives the same item.
+- **`ContentDelivery`** — one subscriber's copy of that cycle, holding their own status, Slack
+  message timestamp, and retry state. `@@unique([runId, subscriberId])` guarantees one message per
+  person per cycle.
+
+That split is what makes retry work per person: if one subscriber's send fails, the others stay
+`SENT` and only the failed row is retried. A retry resends the run's stored snapshot rather than
+re-rendering, so the message that goes out second is identical to the one that went out first.
+
+A cycle is keyed by **calendar date, not absolute time**. Each subscriber is sent to at their own
+local `sendTime` (`UserSubscriber.timezone`), so one `deliveryLocalDate` can span roughly 49 hours
+of real time from UTC+14 to UTC−11 — and everyone who reaches that date still gets the same
+content. `ScheduleStream.timezone` is a reference value for display and does not decide when
+anyone is sent to. Someone who subscribes after their local send time has passed starts on the
+next cycle; there is no backfill.
+
+| Migration                                        | Contents                                                                                                                                                                                             |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `20260728095425_init`                            | Full initial schema                                                                                                                                                                                  |
+| `20260728160216_content_revision_version_unique` | `UNIQUE (parentContentId, version)` on `ContentItem`                                                                                                                                                 |
+| `20260728174034_content_revision_version_check`  | `CHECK` pinning roots to version 1, revisions above                                                                                                                                                  |
+| `20260729121712_user_subscriptions`              | Replaces `ChannelSubscription` with `UserSubscriber` (`@@unique([workspaceId, slackUserId])`), and repoints `ScheduleStream`/`ContentDelivery` from a channel subscription to a workspace/subscriber |
+| `20260729164457_per_subscriber_delivery`         | Splits delivery into `DeliveryRun` (per cycle) and `ContentDelivery` (per subscriber), so duplicate prevention and retry are per person. Adds `rendererVersion` and `ScheduleStream.locale`          |
+
+The schema supports all four content types, but no content is delivered anywhere yet — the
+scheduler that would create these rows is the rest of Phase 4.
 
 ## Known limitations
 
 1. **No automated tests.** This project deliberately carries no test suite, no test tooling,
    and no test database. Changes are verified by building, linting, and exercising the API
-   directly. `PLAN.md` §17 is therefore not implemented.
+   directly, as described in `PLAN.md` §17.
 
-2. **The content checksum fingerprints database rows, not content.** `ReviewService.approve`
-   passes full Prisma source rows into `ContentChecksumService.calculate`, which canonicalizes
-   every enumerable property — including `id`, `contentId`, `createdAt`, and `updatedAt`. The
-   `ChecksumSource` interface is compile-time only and strips nothing at runtime. As a result,
-   re-saving byte-identical bibliographic data produces a different checksum, and a revision
-   can never match its parent's checksum even when the content is unchanged. The checksum is
-   still a stable per-approval fingerprint, so it remains usable as an approval marker.
+2. **The content checksum includes the revision version.** `contentChecksum` is a stable
+   fingerprint of an approval: identical content approved twice produces an identical hash,
+   including across separate rows with different ids and timestamps. Because `version` is part
+   of the hashed identity, a revision never matches its parent's checksum even when the text is
+   unchanged. That is deliberate — the checksum identifies the approved revision — but it means
+   the checksum cannot be used to answer "is this revision textually identical to the last one".
 
-3. **Prisma errors surface as HTTP 500.** `AllExceptionsFilter` normalizes only
-   `HttpException`. A unique-constraint violation (`P2002`) or a serialization failure
-   (`P2034`) from the `Serializable` transaction in `revise` is returned as
-   `INTERNAL_SERVER_ERROR` rather than a `409`. This is reachable only under concurrent
-   revisions of the same content item.
+3. **Phase 3 posts only the diagnostic message.** `POST /slack/test-message` sends a fixed,
+   server-authored connectivity check. It accepts no text, blocks, or content id, invokes no
+   renderer, and writes no delivery record, so it cannot be used to deliver content around the
+   duplicate protection that arrives in Phase 4.
 
-4. **The revision uniqueness constraint does not cover root items.** `parentContentId` is
-   nullable and PostgreSQL treats `NULL`s as distinct, so `UNIQUE (parentContentId, version)`
-   constrains revisions only. Root items are always version 1, so this is benign today.
+4. **`SlackGateway.verifyChannel` is unused dead code.** It was written for the earlier
+   channel-subscription design and still exists on `SlackGateway`/`SlackService`
+   (`src/slack/slack.gateway.ts`, `src/slack/slack.service.ts`), but nothing calls it after the
+   pivot to per-user DMs — there is no channel to verify access to. It should be deleted along
+   with `SlackChannelInfo`.

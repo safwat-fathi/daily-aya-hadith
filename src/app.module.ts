@@ -8,9 +8,24 @@ import { ContentModule } from './content/content.module';
 import { HealthModule } from './health/health.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ReviewModule } from './review/review.module';
+import { SlackModule } from './slack/slack.module';
+import { SubscribersModule } from './subscribers/subscribers.module';
+import { SlackEventsModule } from './slack-events/slack-events.module';
+import { WorkspacesModule } from './workspaces/workspaces.module';
 
 @Module({
-  imports: [AppConfigModule, PrismaModule, HealthModule, AuditModule, ContentModule, ReviewModule],
+  imports: [
+    AppConfigModule,
+    PrismaModule,
+    HealthModule,
+    AuditModule,
+    ContentModule,
+    ReviewModule,
+    SlackModule,
+    WorkspacesModule,
+    SubscribersModule,
+    SlackEventsModule,
+  ],
   providers: [
     {
       provide: APP_GUARD,

@@ -32,6 +32,12 @@ export function createLoggerConfig(environment: AppEnvironment): Params {
           'req.body.botToken',
           'req.body.databaseUrl',
           'req.body.token',
+          'req.body.tokenSecretKey',
+          'req.body.slackBotToken',
+          // A Slack SDK HTTP error carries the request configuration, which includes the
+          // `Bearer xoxb-…` header. Redact it in case such an error ever reaches the serializer.
+          'err.config.headers.authorization',
+          'err.request.headers.authorization',
         ],
         censor: '[REDACTED]',
       },
