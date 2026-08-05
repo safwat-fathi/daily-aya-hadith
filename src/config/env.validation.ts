@@ -18,6 +18,7 @@ export interface AppEnvironment {
   SCHEDULER_ENABLED: boolean;
   SCHEDULER_INTERVAL_MINUTES: number;
   SCHEDULER_LOCK_ID: number;
+  CLOCK_OFFSET_SECONDS: number;
   SWAGGER_ENABLED: boolean;
 }
 
@@ -53,6 +54,15 @@ const environmentSchema = Joi.object<AppEnvironment>({
   SCHEDULER_ENABLED: Joi.boolean().truthy('true').falsy('false').default(false),
   SCHEDULER_INTERVAL_MINUTES: Joi.number().integer().min(1).max(60).default(5),
   SCHEDULER_LOCK_ID: Joi.number().integer().min(1).default(874321),
+  // Shifts every scheduling decision, so production must never run with it set. Enforced here
+  // rather than in the clock itself: a startup failure cannot be missed, a runtime check can.
+  CLOCK_OFFSET_SECONDS: Joi.number()
+    .integer()
+    .default(0)
+    .when('NODE_ENV', {
+      is: 'production',
+      then: Joi.valid(0),
+    }),
   SWAGGER_ENABLED: Joi.boolean().truthy('true').falsy('false').default(false),
 })
   .unknown(true)

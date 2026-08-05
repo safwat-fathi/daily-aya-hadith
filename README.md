@@ -302,6 +302,7 @@ must have a committed migration. Production deployments should run `pnpm db:migr
 | `SCHEDULER_ENABLED`          | Optional, defaults to `false`                 | Phase 4 scheduler switch                                                    |
 | `SCHEDULER_INTERVAL_MINUTES` | Optional, defaults to `5`                     | Phase 4 scheduler interval                                                  |
 | `SCHEDULER_LOCK_ID`          | Optional, defaults to `874321`                | Phase 4 PostgreSQL advisory-lock ID                                         |
+| `CLOCK_OFFSET_SECONDS`       | Optional, defaults to `0`                     | Shifts "now" for scheduling; **startup fails if non-zero in production**    |
 
 Configuration is validated before application startup. Validation errors name invalid fields
 but do not include their values.
@@ -395,8 +396,7 @@ scheduler that would create these rows is the rest of Phase 4.
    renderer, and writes no delivery record, so it cannot be used to deliver content around the
    duplicate protection that arrives in Phase 4.
 
-4. **`SlackGateway.verifyChannel` is unused dead code.** It was written for the earlier
-   channel-subscription design and still exists on `SlackGateway`/`SlackService`
-   (`src/slack/slack.gateway.ts`, `src/slack/slack.service.ts`), but nothing calls it after the
-   pivot to per-user DMs — there is no channel to verify access to. It should be deleted along
-   with `SlackChannelInfo`.
+4. **The scheduler does not exist yet.** The delivery schema, the injectable `Clock`, and
+   per-subscriber local-date arithmetic are in place, but nothing creates `DeliveryRun` or
+   `ContentDelivery` rows automatically. Streams, content selection, and the cron tick are the
+   remaining Phase 4 work; see `PLAN.md` §29.1.

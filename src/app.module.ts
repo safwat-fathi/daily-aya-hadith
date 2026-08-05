@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { ClockModule } from './common/clock/clock.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { AdminKeyGuard } from './common/guards/admin-key.guard';
 import { AppConfigModule } from './config/app-config.module';
@@ -16,6 +17,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module';
 @Module({
   imports: [
     AppConfigModule,
+    ClockModule,
     PrismaModule,
     HealthModule,
     AuditModule,

@@ -2017,6 +2017,10 @@ SCHEDULER_ENABLED=true
 SCHEDULER_INTERVAL_MINUTES=5
 SCHEDULER_LOCK_ID=874321
 
+# Shifts the application's idea of "now", so per-subscriber scheduling can be exercised without
+# waiting. Startup fails if non-zero while NODE_ENV=production.
+CLOCK_OFFSET_SECONDS=0
+
 LOG_LEVEL=debug
 SWAGGER_ENABLED=true
 ```
@@ -2564,15 +2568,14 @@ This section is the authoritative punch list as of migration `20260729164457_per
 
 These are hard dependencies of Phase 4. Nothing that reads a wall clock, evaluates a subscriber's timezone, or writes a `DeliveryRun`/`ContentDelivery` row can be built correctly without them.
 
-1. **`@nestjs/schedule` is not installed.** §3.1 and §28 name it as the scheduling mechanism; there is no cron infrastructure in the application today.
-2. **No timezone-aware date library is installed.** §6.5 recommends Luxon and forbids fixed UTC-offset arithmetic; §11.2's per-subscriber due calculation and every `deliveryLocalDate` computation depend on one. Add `luxon` and `@types/luxon`.
-3. **No injectable `Clock` abstraction exists.** §24 requires one so due-calculation is deterministic and testable; every date computation in the codebase today calls `new Date()` directly. Introduce a `CLOCK` injection token with a `now(): Date` method, a real implementation bound in production, and a controllable one for manual verification (§17).
-4. **`streams/`, `deliveries/`, and `scheduler/` modules do not exist.** §7.3 names all three; none has been started. `streams/` needs the endpoints in §9.5, `deliveries/` needs §9.6 (including the new `GET /runs/:id`), and `scheduler/` needs the tick, the advisory lock, and the two-level reservation transaction from §11.
-5. **No `STREAM_*` or `DELIVERY_*` audit vocabulary.** `src/audit/audit.constants.ts` has no actions or entity types for streams, delivery runs, or deliveries, so §5.25's stream/delivery audit events (added in this revision) cannot be recorded until `AuditAction`/`AuditEntityType` are extended and `STREAM`, `DELIVERY_RUN`, and `DELIVERY` entity types are added.
+1. **`streams/`, `deliveries/`, and `scheduler/` modules do not exist.** §7.3 names all three; none has been started. `streams/` needs the endpoints in §9.5, `deliveries/` needs §9.6 (including the new `GET /runs/:id`), and `scheduler/` needs the tick, the advisory lock, and the two-level reservation transaction from §11.
+2. **No `STREAM_*` or `DELIVERY_*` audit vocabulary.** `src/audit/audit.constants.ts` has no actions or entity types for streams, delivery runs, or deliveries, so §5.25's stream/delivery audit events (added in this revision) cannot be recorded until `AuditAction`/`AuditEntityType` are extended and `STREAM`, `DELIVERY_RUN`, and `DELIVERY` entity types are added.
 
-## 29.2 Dead code to remove
+## 29.2 Dead code — removed
 
-`SlackGateway.verifyChannel` and the `SlackChannelInfo` type (`src/slack/slack.gateway.ts`), their implementation in `src/slack/slack.service.ts`, and the `slackChannelInaccessible` error factory (`src/slack/slack.errors.ts`) all date from the channel-subscription design this project pivoted away from. Nothing calls `verifyChannel` — there is no channel to verify access to in the DM model — so this is unreachable code carried forward by inertia, not a working feature. Delete all four during Phase 4 rather than leaving it to accumulate further unused surface area; §7.4's "Slack rendering must not query the database" and the general no-dead-code discipline both argue for removing it now rather than at cleanup time.
+The orphaned `verifyChannel`, `SlackChannelInfo`, and `slackChannelInaccessible` from the
+channel-subscription design were deleted. `SlackGateway` is now `verifyToken` + `postMessage`,
+which is the whole surface the DM model needs.
 
 ## 29.3 Deferred to Phase 5 — referenced elsewhere as though already built
 
@@ -2596,4 +2599,6 @@ Not gaps in the sense of missing code — the schema and API surface described i
 
 ## 29.6 What is verified working today
 
-To keep this list honest as a *gap* list and not a general status report: Phases 1 through 3 are implemented and manually verified per §17, including the full content lifecycle, all four renderers, the preview endpoint, workspace token verification, the diagnostic Slack connectivity endpoint, per-user subscription via `/subscribe`/`/unsubscribe` over Socket Mode, and the per-subscriber delivery schema itself (migration `20260729164457_per_subscriber_delivery`, with its two-level unique-constraint guarantee confirmed against a running database). What remains is exactly the scheduler and its supporting modules listed in §29.1, plus the cleanup and hardening in §29.2–29.4.
+To keep this list honest as a *gap* list and not a general status report: Phases 1 through 3 are implemented and manually verified per §17, including the full content lifecycle, all four renderers, the preview endpoint, workspace token verification, the diagnostic Slack connectivity endpoint, per-user subscription via `/subscribe`/`/unsubscribe` over Socket Mode, and the per-subscriber delivery schema itself (migration `20260729164457_per_subscriber_delivery`, with its two-level unique-constraint guarantee confirmed against a running database). Slice 2 then added the scheduling foundations: `@nestjs/schedule` and `luxon` are installed, the injectable `Clock` (§24) exists with a `CLOCK_OFFSET_SECONDS` escape hatch that startup refuses in production, and `src/common/utils/schedule-time.ts` implements per-subscriber local-date arithmetic — verified directly, including that one calendar date spans 48.98 hours between UTC+14 and UTC−11, that `daysOfWeek` maps 0=Sunday, and that DST transitions neither throw nor skip a day.
+
+What remains is the scheduler and its supporting modules listed in §29.1, plus the deferred work in §29.3–29.4.

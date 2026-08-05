@@ -67,22 +67,6 @@ export function slackTokenWorkspaceMismatch(expected: string, actual: string): C
   });
 }
 
-export function slackChannelInaccessible(
-  channelId: string,
-  normalized: NormalizedSlackError,
-): SlackOperationException {
-  return new SlackOperationException(
-    HttpStatus.UNPROCESSABLE_ENTITY,
-    {
-      statusCode: HttpStatus.UNPROCESSABLE_ENTITY,
-      code: 'SLACK_CHANNEL_INACCESSIBLE',
-      message: normalized.message,
-      details: { channelId, reason: normalized.code, retryable: normalized.retryable },
-    },
-    normalized,
-  );
-}
-
 export function slackSendFailed(normalized: NormalizedSlackError): SlackOperationException {
   const status = normalized.retryable ? HttpStatus.SERVICE_UNAVAILABLE : HttpStatus.BAD_GATEWAY;
 

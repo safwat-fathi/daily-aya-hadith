@@ -5,7 +5,6 @@ import { workspaceNotFound } from '../workspaces/workspaces.errors';
 import { SlackClientFactory } from './slack-client.factory';
 import { type NormalizedSlackError, normalizeSlackError } from './slack-error.mapper';
 import {
-  slackChannelInaccessible,
   slackSendFailed,
   slackTokenInvalid,
   slackTokenWorkspaceMismatch,
@@ -13,7 +12,6 @@ import {
 } from './slack.errors';
 import type {
   SlackAuthIdentity,
-  SlackChannelInfo,
   SlackGateway,
   SlackMessage,
   SlackPostResult,
@@ -60,68 +58,6 @@ export class SlackService implements SlackGateway {
       teamName: typeof result.team === 'string' ? result.team : undefined,
       botUserId: typeof result.user_id === 'string' ? result.user_id : undefined,
       url: typeof result.url === 'string' ? result.url : undefined,
-    };
-  }
-
-  async verifyChannel(workspaceId: string, channelId: string): Promise<SlackChannelInfo> {
-    const { client } = await this.resolveWorkspace(workspaceId);
-
-    if (channelId.startsWith('U')) {
-      let result;
-      try {
-        result = await client.users.info({ user: channelId });
-      } catch (error) {
-        throw slackChannelInaccessible(
-          channelId,
-          this.record('slack_user_info_failed', error, { workspaceId, channelId }),
-        );
-      }
-
-      const user = result.user;
-
-      if (user === undefined) {
-        throw slackChannelInaccessible(channelId, {
-          code: 'user_not_found',
-          message: 'Slack does not recognize that user.',
-          retryable: false,
-        });
-      }
-
-      return {
-        id: user.id ?? channelId,
-        name: user.name,
-        isPrivate: true,
-        isArchived: false,
-        isMember: true,
-      };
-    }
-
-    let result;
-    try {
-      result = await client.conversations.info({ channel: channelId });
-    } catch (error) {
-      throw slackChannelInaccessible(
-        channelId,
-        this.record('slack_channel_info_failed', error, { workspaceId, channelId }),
-      );
-    }
-
-    const channel = result.channel;
-
-    if (channel === undefined) {
-      throw slackChannelInaccessible(channelId, {
-        code: 'channel_not_found',
-        message: 'Slack does not recognize that channel.',
-        retryable: false,
-      });
-    }
-
-    return {
-      id: channel.id ?? channelId,
-      name: channel.name,
-      isPrivate: channel.is_private ?? channel.is_im ?? channel.is_mpim ?? false,
-      isArchived: channel.is_archived ?? false,
-      isMember: channel.is_member ?? channel.is_im ?? channel.is_mpim ?? false,
     };
   }
 

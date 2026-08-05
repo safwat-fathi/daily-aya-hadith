@@ -18,7 +18,14 @@ function resolveRequestId(
   return requestId;
 }
 
-export function createLoggerConfig(environment: AppEnvironment): Params {
+/**
+ * Takes only the two fields it reads. Declaring the whole `AppEnvironment` forced the caller to
+ * hand-copy every variable into a throwaway object, which meant each new variable had to be
+ * added in a place that never used it — and one was already being silently omitted.
+ */
+export function createLoggerConfig(
+  environment: Pick<AppEnvironment, 'NODE_ENV' | 'LOG_LEVEL'>,
+): Params {
   return {
     forRoutes: [{ path: '{*path}', method: RequestMethod.ALL }],
     pinoHttp: {
