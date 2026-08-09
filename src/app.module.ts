@@ -13,6 +13,7 @@ import { SlackModule } from './slack/slack.module';
 import { SubscribersModule } from './subscribers/subscribers.module';
 import { SlackEventsModule } from './slack-events/slack-events.module';
 import { WorkspacesModule } from './workspaces/workspaces.module';
+import { StreamsModule } from './streams/streams.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module';
     WorkspacesModule,
     SubscribersModule,
     SlackEventsModule,
+    StreamsModule,
   ],
   providers: [
     {

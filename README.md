@@ -113,6 +113,19 @@ X-Admin-Key: <ADMIN_API_KEY>
 | `PATCH` | `/subscribers/:id`             | Update timezone, locale, or active state             |
 | `POST`  | `/slack/test-message`          | Post a fixed connectivity check to a user's DM       |
 
+### Streams
+
+| Method  | Path                   | Description                                            |
+| ------- | ---------------------- | ------------------------------------------------------ |
+| `POST`  | `/streams`             | Create a scheduled content stream                      |
+| `GET`   | `/streams`             | List streams, filterable by `workspaceId`, `isEnabled` |
+| `GET`   | `/streams/:id`         | Get a stream                                           |
+| `PATCH` | `/streams/:id`         | Update a stream configuration                          |
+| `POST`  | `/streams/:id/enable`  | Enable a stream                                        |
+| `POST`  | `/streams/:id/disable` | Disable a stream                                       |
+
+`sendTime` is evaluated in each subscriber's own timezone (`UserSubscriber.timezone`), so `ScheduleStream.timezone` is a reference value for display and does not decide when anyone is sent to.
+
 `slackTeamId` is immutable once a workspace is created — it is the identity the verified token
 is checked against.
 

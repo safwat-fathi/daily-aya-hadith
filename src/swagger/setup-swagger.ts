@@ -20,6 +20,7 @@ import type { AppEnvironment } from '../config/env.validation';
 import { SlackTestMessageResponseDto } from '../slack/dto/slack-test-message.dto';
 import { SubscriberResponseDto } from '../subscribers/dto/subscriber.dto';
 import { VerifyTokenResponseDto, WorkspaceResponseDto } from '../workspaces/dto/workspace.dto';
+import { StreamResponseDto } from '../streams/dto/stream.dto';
 
 export function configureSwagger(app: INestApplication): void {
   const config = app.get(ConfigService<AppEnvironment, true>);
@@ -59,6 +60,7 @@ export function configureSwagger(app: INestApplication): void {
       VerifyTokenResponseDto,
       SubscriberResponseDto,
       SlackTestMessageResponseDto,
+      StreamResponseDto,
     ],
   });
 

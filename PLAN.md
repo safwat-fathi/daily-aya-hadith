@@ -749,9 +749,8 @@ Record important actions:
 - Failed delivery retried.
 - Delivery marked skipped by an administrator.
 
-Not yet implemented (§29): the audit vocabulary currently has no `STREAM_*` or `DELIVERY_*`
-actions and no `STREAM`/`DELIVERY_RUN`/`DELIVERY` entity types, so none of the stream or
-delivery events above can be recorded until those are added.
+Partially implemented (§29): the audit vocabulary currently has `STREAM_*` actions and a `STREAM` entity type, but lacks `DELIVERY_*`
+actions and `DELIVERY_RUN`/`DELIVERY` entity types, so none of the delivery events above can be recorded until those are added.
 
 Each audit event includes:
 
@@ -1464,7 +1463,7 @@ user's direct message with the bot automatically.
 Streams belong to a workspace and broadcast to every active subscriber in it, not to a single
 subscription.
 
-### `POST /workspaces/:workspaceId/streams`
+### `POST /streams`
 
 Request:
 
@@ -1487,7 +1486,7 @@ Request:
 reference value for display and does not decide when anyone receives the message. `locale`
 filters content selection and is the locale the cycle renders in.
 
-### `GET /workspaces/:workspaceId/streams`
+### `GET /streams`
 
 ### `GET /streams/:id`
 
@@ -2381,9 +2380,9 @@ Exit criteria:
 See §29.1 for the current detailed punch list; the bullets below are the phase summary.
 
 - Split delivery into per-cycle and per-subscriber records (migration `20260729164457_per_subscriber_delivery`). **Done** — everything below depends on it.
-- Add `@nestjs/schedule` and a timezone library, and introduce the injectable `Clock` (§24).
-- Implement streams.
-- Implement per-subscriber due calculation.
+- Add `@nestjs/schedule` and a timezone library, and introduce the injectable `Clock` (§24). **Done**
+- Implement streams. **Done**
+- Implement per-subscriber due calculation. **Done**
 - Implement content selection.
 - Implement the two-level reservation transaction.
 - Implement scheduled and manual sends with per-subscriber fan-out.
@@ -2568,8 +2567,8 @@ This section is the authoritative punch list as of migration `20260729164457_per
 
 These are hard dependencies of Phase 4. Nothing that reads a wall clock, evaluates a subscriber's timezone, or writes a `DeliveryRun`/`ContentDelivery` row can be built correctly without them.
 
-1. **`streams/`, `deliveries/`, and `scheduler/` modules do not exist.** §7.3 names all three; none has been started. `streams/` needs the endpoints in §9.5, `deliveries/` needs §9.6 (including the new `GET /runs/:id`), and `scheduler/` needs the tick, the advisory lock, and the two-level reservation transaction from §11.
-2. **No `STREAM_*` or `DELIVERY_*` audit vocabulary.** `src/audit/audit.constants.ts` has no actions or entity types for streams, delivery runs, or deliveries, so §5.25's stream/delivery audit events (added in this revision) cannot be recorded until `AuditAction`/`AuditEntityType` are extended and `STREAM`, `DELIVERY_RUN`, and `DELIVERY` entity types are added.
+1. **`deliveries/` and `scheduler/` modules do not exist.** §7.3 names both; neither has been started. `deliveries/` needs §9.6 (including the new `GET /runs/:id`), and `scheduler/` needs the tick, the advisory lock, and the two-level reservation transaction from §11.
+2. **No `DELIVERY_*` audit vocabulary.** `src/audit/audit.constants.ts` has no actions or entity types for delivery runs or deliveries, so §5.25's delivery audit events cannot be recorded until `AuditAction`/`AuditEntityType` are extended and `DELIVERY_RUN` and `DELIVERY` entity types are added.
 
 ## 29.2 Dead code — removed
 
@@ -2599,6 +2598,6 @@ Not gaps in the sense of missing code — the schema and API surface described i
 
 ## 29.6 What is verified working today
 
-To keep this list honest as a *gap* list and not a general status report: Phases 1 through 3 are implemented and manually verified per §17, including the full content lifecycle, all four renderers, the preview endpoint, workspace token verification, the diagnostic Slack connectivity endpoint, per-user subscription via `/subscribe`/`/unsubscribe` over Socket Mode, and the per-subscriber delivery schema itself (migration `20260729164457_per_subscriber_delivery`, with its two-level unique-constraint guarantee confirmed against a running database). Slice 2 then added the scheduling foundations: `@nestjs/schedule` and `luxon` are installed, the injectable `Clock` (§24) exists with a `CLOCK_OFFSET_SECONDS` escape hatch that startup refuses in production, and `src/common/utils/schedule-time.ts` implements per-subscriber local-date arithmetic — verified directly, including that one calendar date spans 48.98 hours between UTC+14 and UTC−11, that `daysOfWeek` maps 0=Sunday, and that DST transitions neither throw nor skip a day.
+To keep this list honest as a *gap* list and not a general status report: Phases 1 through 3 are implemented and manually verified per §17, including the full content lifecycle, all four renderers, the preview endpoint, workspace token verification, the diagnostic Slack connectivity endpoint, per-user subscription via `/subscribe`/`/unsubscribe` over Socket Mode, and the per-subscriber delivery schema itself (migration `20260729164457_per_subscriber_delivery`, with its two-level unique-constraint guarantee confirmed against a running database). Slice 2 then added the scheduling foundations: `@nestjs/schedule` and `luxon` are installed, the injectable `Clock` (§24) exists with a `CLOCK_OFFSET_SECONDS` escape hatch that startup refuses in production, and `src/common/utils/schedule-time.ts` implements per-subscriber local-date arithmetic — verified directly, including that one calendar date spans 48.98 hours between UTC+14 and UTC−11, that `daysOfWeek` maps 0=Sunday, and that DST transitions neither throw nor skip a day. Slice 3 implemented the `streams/` module and `STREAM_*` audit vocabulary.
 
 What remains is the scheduler and its supporting modules listed in §29.1, plus the deferred work in §29.3–29.4.

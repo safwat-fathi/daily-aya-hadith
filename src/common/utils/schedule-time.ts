@@ -5,7 +5,7 @@ export interface SendTime {
   minute: number;
 }
 
-const SEND_TIME_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
+export const SEND_TIME_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
 /**
  * Parses the validated `HH:mm` string `ScheduleStream.sendTime` keeps (PLAN.md §8.1 note 3).
