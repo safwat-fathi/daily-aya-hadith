@@ -1,6 +1,7 @@
 import { plainToInstance } from 'class-transformer';
 import { ContentType } from '../../generated/prisma/enums';
 import { AyahPayloadDto } from '../../content/dto/payloads.dto';
+import { formatQuranReference } from '../../common/utils/quran-reference';
 import type {
   ContentRenderer,
   RenderContext,
@@ -13,11 +14,15 @@ import {
   fallbackText,
   isPlainObject,
   joinParts,
-  numberText,
   text,
 } from './slack-text';
 
 const HEADER = 'آية اليوم';
+
+/** Same guard as `numberText`, but keeps the value numeric for `formatQuranReference`. */
+function finiteNumber(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
 
 export class AyahRenderer implements ContentRenderer {
   readonly type = ContentType.AYAH;
@@ -58,18 +63,12 @@ export class AyahRenderer implements ContentRenderer {
   }
 
   private reference(payload: AyahPayloadDto): string | undefined {
-    const surahName = text(payload.surahNameArabic) ?? numberText(payload.surahNumber);
-    const surah = surahName === undefined ? undefined : `سورة ${surahName}`;
-    const ayahNumber = numberText(payload.ayahNumber);
-    const ayah = ayahNumber === undefined ? undefined : `آية ${ayahNumber}`;
-    const reference = joinParts([surah, ayah], ' — ');
-    const english = text(payload.surahNameEnglish);
-
-    if (reference === undefined) {
-      return undefined;
-    }
-
-    return english === undefined ? reference : `${reference} (${english})`;
+    return formatQuranReference({
+      surahNumber: finiteNumber(payload.surahNumber),
+      surahNameArabic: text(payload.surahNameArabic),
+      surahNameEnglish: text(payload.surahNameEnglish),
+      ayahNumber: finiteNumber(payload.ayahNumber),
+    });
   }
 
   private wordMeanings(payload: AyahPayloadDto): string[] {

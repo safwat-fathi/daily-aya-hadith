@@ -38,6 +38,10 @@ function sourceCreateData(
     referenceNumber: source.referenceNumber,
     url: source.url,
     notes: source.notes,
+    surahNumber: source.surahNumber,
+    surahNameArabic: source.surahNameArabic,
+    surahNameEnglish: source.surahNameEnglish,
+    ayahNumber: source.ayahNumber,
     sortOrder,
   };
 }
@@ -58,6 +62,10 @@ function copiedSourceData(
     referenceNumber: source.referenceNumber,
     url: source.url,
     notes: source.notes,
+    surahNumber: source.surahNumber,
+    surahNameArabic: source.surahNameArabic,
+    surahNameEnglish: source.surahNameEnglish,
+    ayahNumber: source.ayahNumber,
     sortOrder,
   };
 }

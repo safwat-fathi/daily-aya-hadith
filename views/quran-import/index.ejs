@@ -1,0 +1,86 @@
+<%- include('../_layout/_header', { title, activeNav, flash }) %>
+
+<div class="page-header">
+  <h1>Import from Quran.Foundation</h1>
+</div>
+
+<div class="card">
+  <% if (next) { %>
+    <p>Next up: <strong>سورة <%= next.surahNameArabic %> — آية <%= next.ayahNumber %></strong> (<%= next.surahNameEnglish %>, surah <%= next.surahNumber %>)</p>
+  <% } else { %>
+    <p class="muted">Could not determine the next verse — check that Quran.Foundation credentials are configured.</p>
+  <% } %>
+  <p class="hint">Imports the next verses in sequential Mushaf order as draft Aya content. Drafts still need to be reviewed and approved before they can be delivered — nothing here sends anything or bypasses review (PLAN.md §2.1).</p>
+</div>
+
+<% if (languages.length > 0) { %>
+  <form method="GET" action="/api/v1/admin/quran-import" class="toolbar card">
+    <div class="field">
+      <label for="language">Language</label>
+      <select id="language" name="language">
+        <option value="">All</option>
+        <% languages.forEach(function (lang) { %>
+          <option value="<%= lang %>" <%= selectedLanguage === lang ? 'selected' : '' %>><%= lang %></option>
+        <% }) %>
+      </select>
+    </div>
+    <div class="toolbar-actions">
+      <button type="submit" class="btn primary">Filter</button>
+      <% if (selectedLanguage) { %>
+        <a href="/api/v1/admin/quran-import" class="btn">Clear</a>
+      <% } %>
+    </div>
+  </form>
+<% } %>
+
+<form method="POST" action="/api/v1/admin/quran-import" class="card">
+  <% if (resourceListsAvailable) { %>
+    <div class="field">
+      <label for="translationResourceId">Translation</label>
+      <select id="translationResourceId" name="translationResourceId">
+        <option value="">(none)</option>
+        <% translations.forEach(function (t) { %>
+          <option value="<%= t.id %>" <%= t.id === defaults.translationResourceId ? 'selected' : '' %>>
+            <%= t.name %><% if (t.authorName) { %> — <%= t.authorName %><% } %> (<%= t.languageName %>)
+          </option>
+        <% }) %>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="tafsirResourceId">Tafsir</label>
+      <select id="tafsirResourceId" name="tafsirResourceId">
+        <option value="">(none)</option>
+        <% tafsirs.forEach(function (t) { %>
+          <option value="<%= t.id %>" <%= t.id === defaults.tafsirResourceId ? 'selected' : '' %>>
+            <%= t.name %><% if (t.authorName) { %> — <%= t.authorName %><% } %> (<%= t.languageName %>)
+          </option>
+        <% }) %>
+      </select>
+    </div>
+  <% } else { %>
+    <p class="muted">Could not load translation/tafsir lists from Quran.Foundation — enter resource ids directly, or leave blank for none.</p>
+    <div class="field">
+      <label for="translationResourceId">Translation resource id</label>
+      <input type="text" id="translationResourceId" name="translationResourceId" value="<%= defaults.translationResourceId || '' %>" />
+    </div>
+    <div class="field">
+      <label for="tafsirResourceId">Tafsir resource id</label>
+      <input type="text" id="tafsirResourceId" name="tafsirResourceId" value="<%= defaults.tafsirResourceId || '' %>" />
+    </div>
+  <% } %>
+
+  <div class="field">
+    <label><input type="checkbox" name="includeWordMeanings" value="true" checked /> Include word-by-word meanings</label>
+    <p class="hint">Quran.Foundation only provides word-by-word glosses in English, regardless of the translation/tafsir language chosen above — the API has no language control for these.</p>
+  </div>
+
+  <div class="field">
+    <label for="count">How many verses</label>
+    <input type="number" id="count" name="count" min="1" max="20" value="1" />
+  </div>
+
+  <button type="submit" class="primary">Import</button>
+</form>
+
+<%- include('../_layout/_footer') %>

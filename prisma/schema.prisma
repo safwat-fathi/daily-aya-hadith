@@ -176,6 +176,12 @@ model ContentSource {
   chapter         String?
   referenceNumber String?
   url             String?
+  /// Only populated when sourceType = QURAN; used to synthesize `title` instead of the
+  /// bibliography fields above, which don't apply to a Quran citation.
+  surahNumber      Int?
+  surahNameArabic  String?
+  surahNameEnglish String?
+  ayahNumber       Int?
   notes           String?
   sortOrder       Int        @default(0)
   createdAt       DateTime   @default(now())
@@ -263,6 +269,16 @@ model ContentDelivery {
   @@unique([runId, subscriberId])
   @@index([status, nextRetryAt])
   @@index([subscriberId, createdAt])
+}
+
+/// Tracks how far the Quran.Foundation import (src/quran-foundation/) has advanced through the
+/// Mushaf in sequential order. Single row, keyed by a fixed id so there is always at most one;
+/// 0/0 means "nothing imported yet, next up is 1:1".
+model QuranImportCursor {
+  id              String   @id @default("singleton")
+  lastSurahNumber Int      @default(0)
+  lastAyahNumber  Int      @default(0)
+  updatedAt       DateTime @updatedAt
 }
 
 model AuditEvent {

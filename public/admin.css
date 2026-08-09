@@ -5,12 +5,14 @@
   --text: #1c2128;
   --text-muted: #5b6570;
   --accent: #2f6fed;
+  --accent-hover: #255bc4;
   --accent-contrast: #ffffff;
   --danger: #c22b2b;
   --danger-bg: #fdecec;
   --success: #1a7f37;
   --success-bg: #e9f7ee;
   --radius: 6px;
+  --control-height: 38px;
 }
 
 * {
@@ -67,7 +69,7 @@ main {
 
 .page-header {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 1rem;
   margin-bottom: 1rem;
@@ -114,9 +116,9 @@ table {
 th,
 td {
   text-align: left;
-  padding: 0.5rem 0.6rem;
+  padding: 0.6rem 0.75rem;
   border-bottom: 1px solid var(--border);
-  vertical-align: top;
+  vertical-align: middle;
 }
 
 th {
@@ -168,9 +170,38 @@ tbody tr:hover {
 .toolbar {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
-  align-items: end;
-  margin-bottom: 1rem;
+  gap: 0.75rem 1rem;
+  align-items: flex-end;
+  margin-bottom: 1.25rem;
+}
+
+.toolbar .field {
+  margin-bottom: 0;
+  flex: 0 1 auto;
+}
+
+.toolbar .field label {
+  white-space: nowrap;
+}
+
+.toolbar .field select,
+.toolbar .field input[type='text'] {
+  min-width: 140px;
+}
+
+.toolbar .field-search {
+  flex: 1 1 200px;
+  max-width: 360px;
+}
+
+.toolbar .field-search input {
+  width: 100%;
+}
+
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .field {
@@ -195,21 +226,45 @@ input[type='text'],
 input[type='number'],
 input[type='password'],
 input[type='url'],
-select,
-textarea {
+select {
   font: inherit;
-  padding: 0.45rem 0.6rem;
+  font-size: 0.9rem;
+  height: var(--control-height);
+  padding: 0 0.75rem;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface);
   color: var(--text);
   width: 100%;
   max-width: 640px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+select {
+  cursor: pointer;
 }
 
 textarea {
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  width: 100%;
+  max-width: 640px;
   min-height: 5rem;
   resize: vertical;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(47, 111, 237, 0.15);
 }
 
 fieldset {
@@ -240,15 +295,29 @@ fieldset legend {
 
 button,
 .btn {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font: inherit;
-  padding: 0.45rem 0.9rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  height: var(--control-height);
+  padding: 0 1rem;
   border-radius: var(--radius);
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text);
   cursor: pointer;
   text-decoration: none;
+  line-height: 1;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+button:hover,
+.btn:hover {
+  background: #f0f2f5;
+  border-color: #cbd2d9;
 }
 
 button.primary,
@@ -258,6 +327,12 @@ button.primary,
   color: var(--accent-contrast);
 }
 
+button.primary:hover,
+.btn.primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
 button.danger,
 .btn.danger {
   background: var(--danger-bg);
@@ -265,15 +340,25 @@ button.danger,
   color: var(--danger);
 }
 
+button.danger:hover,
+.btn.danger:hover {
+  background: #fabbbb;
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  margin-top: 0.5rem;
+  align-items: center;
 }
 
 .actions form {
-  display: inline;
+  display: inline-flex;
+  margin: 0;
+}
+
+.actions form button {
+  margin: 0;
 }
 
 .muted {

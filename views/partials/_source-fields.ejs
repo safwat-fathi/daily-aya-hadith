@@ -1,31 +1,53 @@
 <fieldset>
   <legend>Sources (up to 3 shown here; edit again to add more)</legend>
-  <p class="hint">A row with no title is ignored — leave unused rows blank.</p>
-  <% for (var sourceIndex = 0; sourceIndex < 3; sourceIndex++) { var source = sources[sourceIndex] || {}; %>
-    <div class="source-row">
+  <p class="hint">A row with no title (or, for Quran, no surah/ayah) is ignored — leave unused rows blank.</p>
+  <% for (var sourceIndex = 0; sourceIndex < 3; sourceIndex++) { var source = sources[sourceIndex] || {}; var effectiveSourceType = source.sourceType || sourceTypes[0]; var isQuran = effectiveSourceType === 'QURAN'; %>
+    <div class="source-row" data-source-row>
       <div class="field">
         <label>Source type</label>
-        <select name="sources[<%= sourceIndex %>][sourceType]">
+        <select name="sources[<%= sourceIndex %>][sourceType]" data-source-type-select>
           <% sourceTypes.forEach(function (sourceType) { %>
             <option value="<%= sourceType %>" <%= source.sourceType === sourceType ? 'selected' : '' %>><%= sourceType %></option>
           <% }) %>
         </select>
       </div>
-      <div class="field">
-        <label>Title</label>
-        <input type="text" name="sources[<%= sourceIndex %>][title]" value="<%= source.title || '' %>" />
+
+      <div class="source-bibliography-fields" data-source-bibliography <%= isQuran ? 'hidden' : '' %>>
+        <div class="field">
+          <label>Title</label>
+          <input type="text" name="sources[<%= sourceIndex %>][title]" value="<%= source.title || '' %>" />
+        </div>
+        <div class="field">
+          <label>Author</label>
+          <input type="text" name="sources[<%= sourceIndex %>][author]" value="<%= source.author || '' %>" />
+        </div>
+        <div class="field">
+          <label>Reference number</label>
+          <input type="text" name="sources[<%= sourceIndex %>][referenceNumber]" value="<%= source.referenceNumber || '' %>" />
+        </div>
+        <div class="field">
+          <label>URL</label>
+          <input type="url" name="sources[<%= sourceIndex %>][url]" value="<%= source.url || '' %>" />
+        </div>
       </div>
-      <div class="field">
-        <label>Author</label>
-        <input type="text" name="sources[<%= sourceIndex %>][author]" value="<%= source.author || '' %>" />
-      </div>
-      <div class="field">
-        <label>Reference number</label>
-        <input type="text" name="sources[<%= sourceIndex %>][referenceNumber]" value="<%= source.referenceNumber || '' %>" />
-      </div>
-      <div class="field">
-        <label>URL</label>
-        <input type="url" name="sources[<%= sourceIndex %>][url]" value="<%= source.url || '' %>" />
+
+      <div class="source-quran-fields" data-source-quran <%= isQuran ? '' : 'hidden' %>>
+        <div class="field">
+          <label>Surah number (1-114)</label>
+          <input type="number" name="sources[<%= sourceIndex %>][surahNumber]" min="1" max="114" value="<%= source.surahNumber || '' %>" />
+        </div>
+        <div class="field">
+          <label>Surah name (Arabic)</label>
+          <input type="text" name="sources[<%= sourceIndex %>][surahNameArabic]" value="<%= source.surahNameArabic || '' %>" dir="rtl" />
+        </div>
+        <div class="field">
+          <label>Surah name (English)</label>
+          <input type="text" name="sources[<%= sourceIndex %>][surahNameEnglish]" value="<%= source.surahNameEnglish || '' %>" />
+        </div>
+        <div class="field">
+          <label>Ayah number</label>
+          <input type="number" name="sources[<%= sourceIndex %>][ayahNumber]" min="1" max="286" value="<%= source.ayahNumber || '' %>" />
+        </div>
       </div>
     </div>
   <% } %>

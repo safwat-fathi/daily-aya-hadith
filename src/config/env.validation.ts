@@ -19,6 +19,11 @@ export interface AppEnvironment {
   SCHEDULER_ENABLED: boolean;
   SCHEDULER_INTERVAL_MINUTES: number;
   SCHEDULER_LOCK_ID: number;
+  QURAN_FOUNDATION_ENV: 'prelive' | 'production';
+  QURAN_FOUNDATION_CLIENT_ID?: string;
+  QURAN_FOUNDATION_CLIENT_SECRET?: string;
+  QURAN_FOUNDATION_TRANSLATION_RESOURCE_ID?: string;
+  QURAN_FOUNDATION_TAFSIR_RESOURCE_ID?: string;
   CLOCK_OFFSET_SECONDS: number;
   SWAGGER_ENABLED: boolean;
 }
@@ -59,6 +64,18 @@ const environmentSchema = Joi.object<AppEnvironment>({
   SCHEDULER_ENABLED: Joi.boolean().truthy('true').falsy('false').default(false),
   SCHEDULER_INTERVAL_MINUTES: Joi.number().integer().min(1).max(60).default(5),
   SCHEDULER_LOCK_ID: Joi.number().integer().min(1).default(874321),
+  // All optional: leave blank and the app still boots, with the import endpoint returning 503
+  // QURAN_FOUNDATION_NOT_CONFIGURED, same graceful-degradation pattern as the Slack vars above.
+  // Never call the runtime scheduler/delivery path with this client (PLAN.md §2.1) — import only.
+  // Defaults to production: verified live that dashboard-issued credentials authenticate
+  // against the production OAuth/API hosts without a separate prelive/sandbox request, so most
+  // integrations should start there. A 401 invalid_client on the token request means "wrong
+  // host for these credentials", not "wrong credentials" — try the other value.
+  QURAN_FOUNDATION_ENV: Joi.string().valid('prelive', 'production').default('production'),
+  QURAN_FOUNDATION_CLIENT_ID: Joi.string().allow('').optional(),
+  QURAN_FOUNDATION_CLIENT_SECRET: Joi.string().allow('').optional(),
+  QURAN_FOUNDATION_TRANSLATION_RESOURCE_ID: Joi.string().allow('').optional(),
+  QURAN_FOUNDATION_TAFSIR_RESOURCE_ID: Joi.string().allow('').optional(),
   // Shifts every scheduling decision, so production must never run with it set. Enforced here
   // rather than in the clock itself: a startup failure cannot be missed, a runtime check can.
   CLOCK_OFFSET_SECONDS: Joi.number()

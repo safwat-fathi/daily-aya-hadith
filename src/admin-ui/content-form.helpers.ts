@@ -1,5 +1,6 @@
 import { hasText } from '../common/utils/text';
-import { ContentType } from '../generated/prisma/enums';
+import { formatQuranReference } from '../common/utils/quran-reference';
+import { ContentType, SourceType } from '../generated/prisma/enums';
 
 /**
  * HTML forms have no numeric or nested-object types — every field arrives as a string (or a
@@ -135,26 +136,54 @@ export interface RawSourceForm {
   referenceNumber?: string;
   url?: string;
   notes?: string;
+  surahNumber?: number;
+  surahNameArabic?: string;
+  surahNameEnglish?: string;
+  ayahNumber?: number;
 }
 
-/** Drops rows with no title — the field that marks a row as "actually filled in". */
+/**
+ * Drops rows with no title — the field that marks a row as "actually filled in" — after QURAN
+ * rows have had a title synthesized from their Surah/Ayah fields via `formatQuranReference`
+ * (falling back to any stored title so an existing QURAN source with no Surah/Ayah data
+ * survives an unrelated edit). A QURAN source is cited by Surah/Ayah, not the generic
+ * bibliography fields, so its `title` — required everywhere downstream (DB column, DTO,
+ * approval validation, and the literal text `SlackMessageBuilder.citation()` renders into the
+ * Slack message) — is derived rather than typed directly.
+ */
 export function buildSourcesFromForm(raw: unknown): RawSourceForm[] {
   const rows = Array.isArray(raw) ? raw : [];
 
   return rows
     .map(asRecord)
-    .filter((row) => str(row.title) !== undefined)
-    .map((row) => ({
-      sourceType: str(row.sourceType),
-      title: str(row.title),
-      author: str(row.author),
-      publisher: str(row.publisher),
-      edition: str(row.edition),
-      volume: str(row.volume),
-      page: str(row.page),
-      chapter: str(row.chapter),
-      referenceNumber: str(row.referenceNumber),
-      url: str(row.url),
-      notes: str(row.notes),
-    }));
+    .map((row) => {
+      const sourceType = str(row.sourceType);
+      const isQuran = sourceType === SourceType.QURAN;
+      const surahNumber = isQuran ? num(row.surahNumber) : undefined;
+      const surahNameArabic = isQuran ? str(row.surahNameArabic) : undefined;
+      const surahNameEnglish = isQuran ? str(row.surahNameEnglish) : undefined;
+      const ayahNumber = isQuran ? num(row.ayahNumber) : undefined;
+
+      return {
+        sourceType,
+        title: isQuran
+          ? (formatQuranReference({ surahNumber, surahNameArabic, surahNameEnglish, ayahNumber }) ??
+            str(row.title))
+          : str(row.title),
+        author: isQuran ? undefined : str(row.author),
+        publisher: isQuran ? undefined : str(row.publisher),
+        edition: isQuran ? undefined : str(row.edition),
+        volume: isQuran ? undefined : str(row.volume),
+        page: isQuran ? undefined : str(row.page),
+        chapter: isQuran ? undefined : str(row.chapter),
+        referenceNumber: isQuran ? undefined : str(row.referenceNumber),
+        url: isQuran ? undefined : str(row.url),
+        notes: str(row.notes),
+        surahNumber,
+        surahNameArabic,
+        surahNameEnglish,
+        ayahNumber,
+      };
+    })
+    .filter((row) => row.title !== undefined);
 }

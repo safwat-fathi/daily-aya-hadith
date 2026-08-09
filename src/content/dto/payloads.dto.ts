@@ -14,7 +14,11 @@ import {
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 const SHORT_TEXT_MAX_LENGTH = 500;
-const LONG_TEXT_MAX_LENGTH = 10_000;
+// Exported for src/quran-foundation/html-text.ts, which must clamp imported translation/tafsir
+// text to this same bound before it reaches ContentService.create() — Quran.Foundation tafsir
+// text can run tens of thousands of characters (confirmed live against Ibn Kathir), far past
+// what fits here.
+export const LONG_TEXT_MAX_LENGTH = 10_000;
 
 export class WordMeaningDto {
   @ApiPropertyOptional()

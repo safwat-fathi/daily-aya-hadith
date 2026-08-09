@@ -24,11 +24,16 @@
       <% }) %>
     </select>
   </div>
-  <div class="field">
+  <div class="field field-search">
     <label for="search">Search</label>
     <input type="text" id="search" name="search" value="<%= query.search || '' %>" placeholder="Title or source" />
   </div>
-  <button type="submit">Filter</button>
+  <div class="toolbar-actions">
+    <button type="submit" class="btn primary">Filter</button>
+    <% if (query.type || query.status || query.search) { %>
+      <a href="/api/v1/admin/content" class="btn">Clear</a>
+    <% } %>
+  </div>
 </form>
 
 <div class="card">

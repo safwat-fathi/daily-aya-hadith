@@ -10,6 +10,7 @@ import { ContentModule } from './content/content.module';
 import { DeliveriesModule } from './deliveries/deliveries.module';
 import { HealthModule } from './health/health.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { QuranFoundationModule } from './quran-foundation/quran-foundation.module';
 import { ReviewModule } from './review/review.module';
 import { SchedulerModule } from './scheduler/scheduler.module';
 import { SlackModule } from './slack/slack.module';
@@ -26,6 +27,7 @@ import { StreamsModule } from './streams/streams.module';
     HealthModule,
     AuditModule,
     ContentModule,
+    QuranFoundationModule,
     ReviewModule,
     SlackModule,
     WorkspacesModule,
