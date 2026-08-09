@@ -2563,12 +2563,30 @@ The most important correctness rule is:
 
 This section is the authoritative punch list as of migration `20260729164457_per_subscriber_delivery`. It exists because the channel-to-DM pivot and the per-subscriber delivery split each closed one set of gaps while the surrounding modules — audit vocabulary, the scheduler, security hardening — were left for later. Keep this section current: when an item here is closed, delete it from here and, if it changes behavior described elsewhere in this document, update that section too rather than leaving both a fixed gap and a stale note.
 
-## 29.1 Blocking — required before the scheduler can be built
+## 29.1 Implemented, pending §17 manual verification
 
-These are hard dependencies of Phase 4. Nothing that reads a wall clock, evaluates a subscriber's timezone, or writes a `DeliveryRun`/`ContentDelivery` row can be built correctly without them.
+Both items below are now code-complete (lint/build/`db:status` all pass, and the application
+boots cleanly with every new module wired into the DI graph) but have **not** been through §17's
+manual verification, which requires sending real Slack messages to a real subscriber and is
+therefore left to whoever runs it with their own workspace/token rather than performed
+unilaterally. Do not treat this section as "done" until that pass has run per PLAN.md §17.2's
+checklist for scheduling and idempotency.
 
-1. **`deliveries/` and `scheduler/` modules do not exist.** §7.3 names both; neither has been started. `deliveries/` needs §9.6 (including the new `GET /runs/:id`), and `scheduler/` needs the tick, the advisory lock, and the two-level reservation transaction from §11.
-2. **No `DELIVERY_*` audit vocabulary.** `src/audit/audit.constants.ts` has no actions or entity types for delivery runs or deliveries, so §5.25's delivery audit events cannot be recorded until `AuditAction`/`AuditEntityType` are extended and `DELIVERY_RUN` and `DELIVERY` entity types are added.
+1. **`deliveries/` and `scheduler/` modules.** §7.3 named both; both now exist. `deliveries/`
+   implements §9.6 (including `GET /runs/:id` as a top-level route), and `scheduler/` implements
+   the tick, an xact-scoped advisory lock (`pg_try_advisory_xact_lock`, not the session-scoped
+   `pg_try_advisory_lock` — see `scheduler.lock.ts`), and the two-level reservation transaction
+   from §11. **Deliberately not implemented in this slice:** `POST /streams/:id/send-now` and the
+   `MANUAL` trigger type. The schema's two `DeliveryRun` unique constraints don't obviously allow
+   a manual run to coexist with a same-date scheduled run, and that question was deferred rather
+   than resolved — see the `send-now` note if this is picked up later. The automatic retry sweep
+   *is* implemented (bounded by each stream's `maxAutomaticAttempts`, counted per subscriber), and
+   also reclaims `ContentDelivery` rows stuck at `SENDING` by a crash mid-send.
+2. **`DELIVERY_*` audit vocabulary.** `src/audit/audit.constants.ts` now has `DELIVERY_RETRIED`
+   and `DELIVERY_MARKED_SKIPPED` actions and `DELIVERY_RUN`/`DELIVERY` entity types. Scheduled
+   sends, scheduled failures, and automatic retries are intentionally **not** audited — they're
+   system-generated and actor-less; they go through structured logs (§6.4) instead. Only the two
+   admin-triggered actions above write `AuditEvent` rows.
 
 ## 29.2 Dead code — removed
 
@@ -2600,4 +2618,10 @@ Not gaps in the sense of missing code — the schema and API surface described i
 
 To keep this list honest as a *gap* list and not a general status report: Phases 1 through 3 are implemented and manually verified per §17, including the full content lifecycle, all four renderers, the preview endpoint, workspace token verification, the diagnostic Slack connectivity endpoint, per-user subscription via `/subscribe`/`/unsubscribe` over Socket Mode, and the per-subscriber delivery schema itself (migration `20260729164457_per_subscriber_delivery`, with its two-level unique-constraint guarantee confirmed against a running database). Slice 2 then added the scheduling foundations: `@nestjs/schedule` and `luxon` are installed, the injectable `Clock` (§24) exists with a `CLOCK_OFFSET_SECONDS` escape hatch that startup refuses in production, and `src/common/utils/schedule-time.ts` implements per-subscriber local-date arithmetic — verified directly, including that one calendar date spans 48.98 hours between UTC+14 and UTC−11, that `daysOfWeek` maps 0=Sunday, and that DST transitions neither throw nor skip a day. Slice 3 implemented the `streams/` module and `STREAM_*` audit vocabulary.
 
-What remains is the scheduler and its supporting modules listed in §29.1, plus the deferred work in §29.3–29.4.
+Slice 4 implemented the scheduler and its supporting modules (§29.1): due-stream-subscriber
+lookup, content selection (§5.14, both strategies), the two-level reservation transaction, Slack
+send/failure recording, the admin retry and mark-skipped endpoints, and the automatic retry
+sweep. This has passed `pnpm lint`/`pnpm build`/`pnpm db:status` and a DI/boot smoke test, but
+**not yet** the §17.2 manual verification pass with a real Slack subscriber — that step, and the
+`send-now`/`MANUAL` deferral noted in §29.1, are what remains before Phase 4 can be called done.
+The deferred work in §29.3–29.4 is still outstanding and unrelated to the scheduler.

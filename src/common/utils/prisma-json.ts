@@ -45,6 +45,19 @@ export function toInputJsonObject(value: unknown): Prisma.InputJsonObject {
 }
 
 /**
+ * Entry point for writing to a `Json` column that holds an array, such as
+ * `DeliveryRun.renderedBlocks`. `toInputJsonObject` deliberately rejects arrays, so this is the
+ * array counterpart: it rejects anything that is not a plain array instead.
+ */
+export function toInputJsonArray(value: unknown): Prisma.InputJsonArray {
+  if (!Array.isArray(value)) {
+    throw new TypeError('Value must be a JSON array.');
+  }
+
+  return toJsonInput(value) as Prisma.InputJsonArray;
+}
+
+/**
  * Maps a JSON value read back from the database into a write input. A stored
  * JSON null reads as `null` but must be written back as `Prisma.JsonNull`.
  */

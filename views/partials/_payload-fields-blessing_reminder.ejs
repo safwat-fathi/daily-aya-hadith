@@ -1,0 +1,32 @@
+<div class="field">
+  <label for="title">Title</label>
+  <input type="text" id="title" name="payload[title]" value="<%= payload.title || '' %>" />
+</div>
+<div class="field">
+  <label for="body">Body</label>
+  <textarea id="body" name="payload[body]"><%= payload.body || '' %></textarea>
+</div>
+<fieldset>
+  <legend>Examples (up to 5 shown)</legend>
+  <% for (var exampleIndex = 0; exampleIndex < 5; exampleIndex++) { var example = (payload.examples && payload.examples[exampleIndex]) || ''; %>
+    <div class="field">
+      <input type="text" name="payload[examples][]" value="<%= example %>" />
+    </div>
+  <% } %>
+</fieldset>
+<div class="field">
+  <label for="relatedAyahReference">Related ayah reference</label>
+  <input type="text" id="relatedAyahReference" name="payload[relatedAyahReference]" value="<%= payload.relatedAyahReference || '' %>" />
+</div>
+<div class="field">
+  <label for="relatedHadithReference">Related hadith reference</label>
+  <input type="text" id="relatedHadithReference" name="payload[relatedHadithReference]" value="<%= payload.relatedHadithReference || '' %>" />
+</div>
+<div class="field">
+  <label for="reflection">Reflection</label>
+  <textarea id="reflection" name="payload[reflection]"><%= payload.reflection || '' %></textarea>
+</div>
+<div class="field">
+  <label for="gratitudeAction">Gratitude action</label>
+  <textarea id="gratitudeAction" name="payload[gratitudeAction]"><%= payload.gratitudeAction || '' %></textarea>
+</div>

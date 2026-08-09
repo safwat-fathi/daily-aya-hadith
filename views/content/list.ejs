@@ -1,0 +1,63 @@
+<%- include('../_layout/_header', { title, activeNav, flash }) %>
+
+<div class="page-header">
+  <h1>Content</h1>
+  <a class="btn primary" href="/api/v1/admin/content/new">+ New content</a>
+</div>
+
+<form method="GET" action="/api/v1/admin/content" class="toolbar card">
+  <div class="field">
+    <label for="type">Type</label>
+    <select id="type" name="type">
+      <option value="">All</option>
+      <% contentTypes.forEach(function (type) { %>
+        <option value="<%= type %>" <%= query.type === type ? 'selected' : '' %>><%= type %></option>
+      <% }) %>
+    </select>
+  </div>
+  <div class="field">
+    <label for="status">Status</label>
+    <select id="status" name="status">
+      <option value="">All</option>
+      <% contentStatuses.forEach(function (status) { %>
+        <option value="<%= status %>" <%= query.status === status ? 'selected' : '' %>><%= status %></option>
+      <% }) %>
+    </select>
+  </div>
+  <div class="field">
+    <label for="search">Search</label>
+    <input type="text" id="search" name="search" value="<%= query.search || '' %>" placeholder="Title or source" />
+  </div>
+  <button type="submit">Filter</button>
+</form>
+
+<div class="card">
+  <table>
+    <thead>
+      <tr>
+        <th>Title</th>
+        <th>Type</th>
+        <th>Status</th>
+        <th>Locale</th>
+        <th>Updated</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% items.forEach(function (item) { %>
+        <tr>
+          <td><a href="/api/v1/admin/content/<%= item.id %>"><%= item.title || '(untitled)' %></a></td>
+          <td><%= item.type %></td>
+          <td><%- include('../partials/_status-badge', { status: item.status }) %></td>
+          <td><%= item.locale %></td>
+          <td><%= new Date(item.updatedAt).toLocaleString() %></td>
+        </tr>
+      <% }) %>
+      <% if (items.length === 0) { %>
+        <tr><td colspan="5" class="muted">No content matches these filters.</td></tr>
+      <% } %>
+    </tbody>
+  </table>
+  <%- include('../partials/_pagination', { pagination, basePath }) %>
+</div>
+
+<%- include('../_layout/_footer') %>

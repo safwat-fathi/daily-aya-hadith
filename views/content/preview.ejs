@@ -1,0 +1,30 @@
+<%- include('../_layout/_header', { title, activeNav, flash }) %>
+
+
+<div style="display: flex; flex-direction: column; align-items: baseline;">
+  <a class="btn" href="/api/v1/admin/content/<%= contentId %>">&larr; Back</a>
+  <h1>Preview: <%= result.type %></h1>
+</div>
+
+<% if (result.warnings.length > 0) { %>
+  <div class="card flash-error">
+    <strong>Rendering warnings:</strong>
+    <ul>
+      <% result.warnings.forEach(function (warning) { %>
+        <li><%= warning %></li>
+      <% }) %>
+    </ul>
+  </div>
+<% } %>
+
+<div class="card">
+  <h2>Plain-text fallback</h2>
+  <pre class="block-preview" dir="auto"><%= result.text %></pre>
+</div>
+
+<div class="card">
+  <h2>Block Kit JSON</h2>
+  <pre class="block-preview"><%= JSON.stringify(result.blocks, null, 2) %></pre>
+</div>
+
+<%- include('../_layout/_footer') %>

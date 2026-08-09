@@ -6,7 +6,8 @@ import type { Request } from 'express';
 import type { AppEnvironment } from '../../config/env.validation';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 
-function digest(value: string): Buffer {
+/** Exported so the admin dashboard's login form can check the same key the same way. */
+export function digest(value: string): Buffer {
   return createHash('sha256').update(value, 'utf8').digest();
 }
 

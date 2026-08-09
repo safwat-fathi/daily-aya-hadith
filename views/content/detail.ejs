@@ -1,0 +1,146 @@
+<%- include('../_layout/_header', { title, activeNav, flash }) %>
+
+<div class="page-header">
+  <h1><%= content.title || '(untitled)' %></h1>
+  <div>
+    <%- include('../partials/_status-badge', { status: content.status }) %>
+    <span class="muted">v<%= content.version %> · <%= content.locale %> · <%= content.type %></span>
+  </div>
+</div>
+
+<% if (approvalIssues && approvalIssues.length > 0) { %>
+  <div class="card flash-error">
+    <strong>Not yet approvable:</strong>
+    <ul>
+      <% approvalIssues.forEach(function (issue) { %>
+        <li><%= issue.field %>: <%= issue.message %></li>
+      <% }) %>
+    </ul>
+  </div>
+<% } %>
+
+<div class="card">
+  <div class="actions">
+    <a class="btn" href="/api/v1/admin/content/<%= content.id %>/preview">Preview Slack message</a>
+
+    <% if (content.status === 'DRAFT') { %>
+      <form method="POST" action="/api/v1/admin/content/<%= content.id %>/submit-review">
+        <button type="submit" class="primary">Submit for review</button>
+      </form>
+    <% } %>
+
+    <% if (content.status === 'APPROVED') { %>
+      <form method="POST" action="/api/v1/admin/content/<%= content.id %>/archive">
+        <button type="submit" class="danger">Archive</button>
+      </form>
+      <form method="POST" action="/api/v1/admin/content/<%= content.id %>/revise">
+        <button type="submit">Create new revision</button>
+      </form>
+    <% } %>
+
+    <% if (content.status === 'ARCHIVED') { %>
+      <form method="POST" action="/api/v1/admin/content/<%= content.id %>/revise">
+        <button type="submit">Create new revision</button>
+      </form>
+    <% } %>
+  </div>
+
+  <% if (content.status === 'IN_REVIEW') { %>
+    <div class="actions" style="margin-top: 1rem; align-items: start;">
+      <form method="POST" action="/api/v1/admin/content/<%= content.id %>/approve">
+        <div class="field">
+          <label>Reviewer note (optional)</label>
+          <textarea name="reviewNote"></textarea>
+        </div>
+        <button type="submit" class="primary">Approve</button>
+      </form>
+      <form method="POST" action="/api/v1/admin/content/<%= content.id %>/reject">
+        <div class="field">
+          <label>Reviewer note (required)</label>
+          <textarea name="reviewNote" required></textarea>
+        </div>
+        <button type="submit" class="danger">Reject</button>
+      </form>
+    </div>
+  <% } %>
+</div>
+
+<% if (editable) { %>
+  <form method="POST" action="/api/v1/admin/content/<%= content.id %>/edit" class="card">
+    <input type="hidden" name="expectedUpdatedAt" value="<%= content.updatedAt.toISOString() %>" />
+
+    <div class="field">
+      <label for="locale">Locale</label>
+      <input type="text" id="locale" name="locale" value="<%= content.locale %>" />
+    </div>
+    <div class="field">
+      <label for="contentTitle">Admin title (optional, internal)</label>
+      <input type="text" id="contentTitle" name="title" value="<%= content.title || '' %>" />
+    </div>
+
+    <% if (content.type === 'AYAH') { %>
+      <%- include('../partials/_payload-fields-ayah', { payload: content.payload }) %>
+    <% } else if (content.type === 'HADITH') { %>
+      <%- include('../partials/_payload-fields-hadith', { payload: content.payload }) %>
+    <% } else if (content.type === 'COMPANION_STORY') { %>
+      <%- include('../partials/_payload-fields-companion_story', { payload: content.payload }) %>
+    <% } else if (content.type === 'BLESSING_REMINDER') { %>
+      <%- include('../partials/_payload-fields-blessing_reminder', { payload: content.payload }) %>
+    <% } %>
+
+    <%- include('../partials/_source-fields', { sources: content.sources, sourceTypes }) %>
+
+    <button type="submit" class="primary">Save changes</button>
+  </form>
+<% } else { %>
+  <div class="card">
+    <h2>Payload</h2>
+    <pre class="block-preview"><%= JSON.stringify(content.payload, null, 2) %></pre>
+    <h2>Sources</h2>
+    <ul>
+      <% content.sources.forEach(function (source) { %>
+        <li>
+          <%= source.sourceType %> — <%= source.title %><% if (source.url) { %>
+          (<a href="<%= source.url %>" target="_blank" rel="noopener"><%= source.url %></a>)<% } %>
+        </li>
+      <% }) %>
+      <% if (content.sources.length === 0) { %>
+        <li class="muted">No sources.</li>
+      <% } %>
+    </ul>
+  </div>
+<% } %>
+
+<div class="card">
+  <h2>Revisions</h2>
+  <ul>
+    <% content.revisions.forEach(function (rev) { %>
+      <li>
+        v<%= rev.version %> — <%- include('../partials/_status-badge', { status: rev.status }) %>
+        <% if (rev.id !== content.id) { %> — <a href="/api/v1/admin/content/<%= rev.id %>">view</a><% } else { %> (current)<% } %>
+      </li>
+    <% }) %>
+  </ul>
+</div>
+
+<div class="card">
+  <h2>Recent deliveries</h2>
+  <% if (deliveries.length === 0) { %>
+    <p class="muted">Never delivered.</p>
+  <% } else { %>
+    <table>
+      <thead><tr><th>Status</th><th>Run date</th><th>Sent at</th></tr></thead>
+      <tbody>
+        <% deliveries.forEach(function (delivery) { %>
+          <tr>
+            <td><%- include('../partials/_status-badge', { status: delivery.status }) %></td>
+            <td><%= delivery.run.deliveryLocalDate %></td>
+            <td><%= delivery.sentAt ? delivery.sentAt.toLocaleString() : '—' %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<%- include('../_layout/_footer') %>

@@ -1,0 +1,52 @@
+<%- include('../_layout/_header', { title, activeNav, flash }) %>
+
+<div class="page-header">
+  <h1><%= mode === 'create' ? 'New subscriber' : subscriber.slackUserId %></h1>
+</div>
+
+<form
+  method="POST"
+  action="<%= mode === 'create' ? '/api/v1/admin/subscribers' : '/api/v1/admin/subscribers/' + subscriber.id + '/edit' %>"
+  class="card"
+>
+  <% if (mode === 'create') { %>
+    <div class="field">
+      <label for="workspaceId">Workspace</label>
+      <select id="workspaceId" name="workspaceId" required>
+        <% workspaces.forEach(function (ws) { %>
+          <option value="<%= ws.id %>"><%= ws.name %></option>
+        <% }) %>
+      </select>
+    </div>
+    <div class="field">
+      <label for="slackUserId">Slack user ID</label>
+      <input type="text" id="slackUserId" name="slackUserId" placeholder="U0123456789" required />
+    </div>
+  <% } else { %>
+    <p class="muted">
+      Workspace: <%= subscriber.workspaceId %><br />
+      Slack user ID: <%= subscriber.slackUserId %> (not editable)
+    </p>
+  <% } %>
+
+  <div class="field">
+    <label for="timezone">Timezone</label>
+    <input type="text" id="timezone" name="timezone" value="<%= subscriber ? subscriber.timezone : 'Africa/Cairo' %>" />
+  </div>
+
+  <div class="field">
+    <label for="locale">Locale</label>
+    <input type="text" id="locale" name="locale" value="<%= subscriber ? subscriber.locale : 'ar' %>" />
+  </div>
+
+  <div class="field">
+    <label>
+      <input type="checkbox" name="isActive" value="true" <%= !subscriber || subscriber.isActive ? 'checked' : '' %> />
+      Active
+    </label>
+  </div>
+
+  <button type="submit" class="primary"><%= mode === 'create' ? 'Create subscriber' : 'Save changes' %></button>
+</form>
+
+<%- include('../_layout/_footer') %>

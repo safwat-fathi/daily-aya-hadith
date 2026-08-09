@@ -1,0 +1,126 @@
+<%- include('../_layout/_header', { title, activeNav, flash }) %>
+
+<div class="page-header">
+  <h1><%= mode === 'create' ? 'New stream' : stream.name %></h1>
+  <% if (mode === 'edit') { %>
+    <div class="actions">
+      <% if (stream.isEnabled) { %>
+        <form method="POST" action="/api/v1/admin/streams/<%= stream.id %>/disable">
+          <button type="submit" class="danger">Disable</button>
+        </form>
+      <% } else { %>
+        <form method="POST" action="/api/v1/admin/streams/<%= stream.id %>/enable">
+          <button type="submit" class="primary">Enable</button>
+        </form>
+      <% } %>
+    </div>
+  <% } %>
+</div>
+
+<% if (mode === 'edit' && nextContent) { %>
+  <div class="card">
+    <h2>Next content (dry run)</h2>
+    <% if (nextContent.eligible) { %>
+      <p><%= nextContent.content.type %>: <%= nextContent.content.title || '(untitled)' %></p>
+    <% } else { %>
+      <p class="muted">No eligible content for this stream's allowed types/locale right now.</p>
+    <% } %>
+  </div>
+<% } %>
+
+<form
+  method="POST"
+  action="<%= mode === 'create' ? '/api/v1/admin/streams' : '/api/v1/admin/streams/' + stream.id + '/edit' %>"
+  class="card"
+>
+  <% if (mode === 'create') { %>
+    <div class="field">
+      <label for="workspaceId">Workspace</label>
+      <select id="workspaceId" name="workspaceId" required>
+        <% workspaces.forEach(function (ws) { %>
+          <option value="<%= ws.id %>"><%= ws.name %></option>
+        <% }) %>
+      </select>
+    </div>
+  <% } else { %>
+    <p class="muted">Workspace: <%= stream.workspaceId %> (not editable here)</p>
+  <% } %>
+
+  <div class="field">
+    <label for="name">Name</label>
+    <input type="text" id="name" name="name" value="<%= stream ? stream.name : '' %>" required />
+  </div>
+
+  <div class="field">
+    <label for="frequency">Frequency</label>
+    <select id="frequency" name="frequency">
+      <% frequencies.forEach(function (freq) { %>
+        <option value="<%= freq %>" <%= stream && stream.frequency === freq ? 'selected' : '' %>><%= freq %></option>
+      <% }) %>
+    </select>
+  </div>
+
+  <div class="field">
+    <label for="sendTime">Send time (HH:mm, evaluated in each subscriber's own timezone)</label>
+    <input type="text" id="sendTime" name="sendTime" value="<%= stream ? stream.sendTime : '09:00' %>" placeholder="09:00" required />
+  </div>
+
+  <div class="field">
+    <label for="timezone">Reference timezone (display only — see hint)</label>
+    <input type="text" id="timezone" name="timezone" value="<%= stream ? stream.timezone : 'Africa/Cairo' %>" required />
+    <p class="hint">IANA name, e.g. Africa/Cairo. Does not control when anyone is sent to — each subscriber's own timezone does.</p>
+  </div>
+
+  <div class="field">
+    <label>Days of week (used only when frequency is WEEKLY)</label>
+    <div class="checkbox-row">
+      <% ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(function (label, day) { %>
+        <label>
+          <input type="checkbox" name="daysOfWeek" value="<%= day %>" <%= stream && stream.daysOfWeek.includes(day) ? 'checked' : '' %> />
+          <%= label %>
+        </label>
+      <% }) %>
+    </div>
+  </div>
+
+  <div class="field">
+    <label for="locale">Locale</label>
+    <input type="text" id="locale" name="locale" value="<%= stream ? stream.locale : 'ar' %>" />
+  </div>
+
+  <div class="field">
+    <label>Allowed content types</label>
+    <div class="checkbox-row">
+      <% contentTypes.forEach(function (type) { %>
+        <label>
+          <input type="checkbox" name="allowedContentTypes" value="<%= type %>" <%= stream && stream.allowedContentTypes.includes(type) ? 'checked' : '' %> />
+          <%= type %>
+        </label>
+      <% }) %>
+    </div>
+  </div>
+
+  <div class="field">
+    <label for="selectionStrategy">Selection strategy</label>
+    <select id="selectionStrategy" name="selectionStrategy">
+      <% selectionStrategies.forEach(function (strategy) { %>
+        <option value="<%= strategy %>" <%= stream && stream.selectionStrategy === strategy ? 'selected' : '' %>><%= strategy %></option>
+      <% }) %>
+    </select>
+  </div>
+
+  <div class="field">
+    <label for="maxAutomaticAttempts">Max automatic retry attempts (1 = no auto-retry, just the first send)</label>
+    <input type="number" id="maxAutomaticAttempts" name="maxAutomaticAttempts" min="1" max="10" value="<%= stream ? stream.maxAutomaticAttempts : 1 %>" />
+  </div>
+
+  <% if (mode === 'create') { %>
+    <div class="field">
+      <label><input type="checkbox" name="isEnabled" value="true" checked /> Enabled</label>
+    </div>
+  <% } %>
+
+  <button type="submit" class="primary"><%= mode === 'create' ? 'Create stream' : 'Save changes' %></button>
+</form>
+
+<%- include('../_layout/_footer') %>

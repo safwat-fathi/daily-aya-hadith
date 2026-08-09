@@ -1,0 +1,45 @@
+<%- include('../_layout/_header', { title, activeNav, flash }) %>
+
+<div class="page-header">
+  <h1>New content</h1>
+</div>
+
+<% if (!selectedType) { %>
+  <div class="card">
+    <p>Choose a content type:</p>
+    <div class="actions">
+      <% contentTypes.forEach(function (type) { %>
+        <a class="btn" href="/api/v1/admin/content/new?type=<%= type %>"><%= type %></a>
+      <% }) %>
+    </div>
+  </div>
+<% } else { %>
+  <form method="POST" action="/api/v1/admin/content" class="card">
+    <input type="hidden" name="type" value="<%= selectedType %>" />
+
+    <div class="field">
+      <label for="locale">Locale</label>
+      <input type="text" id="locale" name="locale" value="<%= locale %>" />
+    </div>
+    <div class="field">
+      <label for="contentTitle">Admin title (optional, internal)</label>
+      <input type="text" id="contentTitle" name="title" value="<%= contentTitle %>" />
+    </div>
+
+    <% if (selectedType === 'AYAH') { %>
+      <%- include('../partials/_payload-fields-ayah', { payload }) %>
+    <% } else if (selectedType === 'HADITH') { %>
+      <%- include('../partials/_payload-fields-hadith', { payload }) %>
+    <% } else if (selectedType === 'COMPANION_STORY') { %>
+      <%- include('../partials/_payload-fields-companion_story', { payload }) %>
+    <% } else if (selectedType === 'BLESSING_REMINDER') { %>
+      <%- include('../partials/_payload-fields-blessing_reminder', { payload }) %>
+    <% } %>
+
+    <%- include('../partials/_source-fields', { sources, sourceTypes }) %>
+
+    <button type="submit" class="primary">Create draft</button>
+  </form>
+<% } %>
+
+<%- include('../_layout/_footer') %>

@@ -8,5 +8,6 @@ import { ReviewService } from './review.service';
   imports: [AuditModule, ContentModule],
   controllers: [ReviewController],
   providers: [ReviewService],
+  exports: [ReviewService],
 })
 export class ReviewModule {}

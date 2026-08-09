@@ -1,0 +1,44 @@
+<div class="field">
+  <label for="arabicText">Arabic text</label>
+  <textarea id="arabicText" name="payload[arabicText]" dir="rtl"><%= payload.arabicText || '' %></textarea>
+</div>
+<div class="field">
+  <label for="translation">Translation</label>
+  <textarea id="translation" name="payload[translation]"><%= payload.translation || '' %></textarea>
+</div>
+<div class="field">
+  <label for="narrator">Narrator</label>
+  <input type="text" id="narrator" name="payload[narrator]" value="<%= payload.narrator || '' %>" />
+</div>
+<div class="field">
+  <label for="collection">Collection</label>
+  <input type="text" id="collection" name="payload[collection]" value="<%= payload.collection || '' %>" />
+</div>
+<div class="field">
+  <label for="book">Book</label>
+  <input type="text" id="book" name="payload[book]" value="<%= payload.book || '' %>" />
+</div>
+<div class="field">
+  <label for="hadithNumber">Hadith number</label>
+  <input type="text" id="hadithNumber" name="payload[hadithNumber]" value="<%= payload.hadithNumber || '' %>" />
+</div>
+<div class="field">
+  <label for="grade">Grade</label>
+  <input type="text" id="grade" name="payload[grade]" value="<%= payload.grade || '' %>" />
+</div>
+<div class="field">
+  <label for="grader">Grader</label>
+  <input type="text" id="grader" name="payload[grader]" value="<%= payload.grader || '' %>" />
+</div>
+<div class="field">
+  <label for="conciseExplanation">Concise explanation</label>
+  <textarea id="conciseExplanation" name="payload[conciseExplanation]"><%= payload.conciseExplanation || '' %></textarea>
+</div>
+<div class="field">
+  <label for="reflection">Reflection</label>
+  <textarea id="reflection" name="payload[reflection]"><%= payload.reflection || '' %></textarea>
+</div>
+<div class="field">
+  <label for="practicalAction">Practical action</label>
+  <textarea id="practicalAction" name="payload[practicalAction]"><%= payload.practicalAction || '' %></textarea>
+</div>

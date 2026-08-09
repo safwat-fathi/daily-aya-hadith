@@ -1,0 +1,72 @@
+<div class="field">
+  <label for="arabicText">Arabic text</label>
+  <textarea id="arabicText" name="payload[arabicText]" dir="rtl"><%= payload.arabicText || '' %></textarea>
+</div>
+<div class="field">
+  <label for="surahNumber">Surah number (1-114)</label>
+  <input type="number" id="surahNumber" name="payload[surahNumber]" min="1" max="114" value="<%= payload.surahNumber || '' %>" />
+</div>
+<div class="field">
+  <label for="surahNameArabic">Surah name (Arabic)</label>
+  <input type="text" id="surahNameArabic" name="payload[surahNameArabic]" value="<%= payload.surahNameArabic || '' %>" dir="rtl" />
+</div>
+<div class="field">
+  <label for="surahNameEnglish">Surah name (English)</label>
+  <input type="text" id="surahNameEnglish" name="payload[surahNameEnglish]" value="<%= payload.surahNameEnglish || '' %>" />
+</div>
+<div class="field">
+  <label for="ayahNumber">Ayah number</label>
+  <input type="number" id="ayahNumber" name="payload[ayahNumber]" min="1" max="286" value="<%= payload.ayahNumber || '' %>" />
+</div>
+<div class="field">
+  <label for="translation">Translation</label>
+  <textarea id="translation" name="payload[translation]"><%= payload.translation || '' %></textarea>
+</div>
+<div class="field">
+  <label for="conciseTafsir">Concise tafsir</label>
+  <textarea id="conciseTafsir" name="payload[conciseTafsir]"><%= payload.conciseTafsir || '' %></textarea>
+</div>
+
+<fieldset>
+  <legend>Word meanings (optional, up to 3 shown)</legend>
+  <% for (var wmIndex = 0; wmIndex < 3; wmIndex++) { var wm = (payload.wordMeanings && payload.wordMeanings[wmIndex]) || {}; %>
+    <div class="repeat-row">
+      <div class="field">
+        <label>Word</label>
+        <input type="text" name="payload[wordMeanings][<%= wmIndex %>][word]" value="<%= wm.word || '' %>" dir="rtl" />
+      </div>
+      <div class="field">
+        <label>Meaning</label>
+        <input type="text" name="payload[wordMeanings][<%= wmIndex %>][meaning]" value="<%= wm.meaning || '' %>" />
+      </div>
+    </div>
+  <% } %>
+</fieldset>
+
+<fieldset>
+  <legend>Sabab al-nuzul (optional)</legend>
+  <div class="field">
+    <label>Summary</label>
+    <textarea name="payload[sababAlNuzul][summary]"><%= (payload.sababAlNuzul && payload.sababAlNuzul.summary) || '' %></textarea>
+  </div>
+  <div class="checkbox-row">
+    <label>
+      <input type="checkbox" name="payload[sababAlNuzul][appliesToWholeAyah]" value="true" <%= (payload.sababAlNuzul && payload.sababAlNuzul.appliesToWholeAyah) ? 'checked' : '' %> />
+      Applies to the whole ayah
+    </label>
+  </div>
+  <div class="field">
+    <label>Scholarly note</label>
+    <textarea name="payload[sababAlNuzul][scholarlyNote]"><%= (payload.sababAlNuzul && payload.sababAlNuzul.scholarlyNote) || '' %></textarea>
+  </div>
+  <p class="hint">Leave the summary blank to omit sabab al-nuzul entirely.</p>
+</fieldset>
+
+<div class="field">
+  <label for="reflection">Reflection</label>
+  <textarea id="reflection" name="payload[reflection]"><%= payload.reflection || '' %></textarea>
+</div>
+<div class="field">
+  <label for="practicalAction">Practical action</label>
+  <textarea id="practicalAction" name="payload[practicalAction]"><%= payload.practicalAction || '' %></textarea>
+</div>

@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { AuditAction, AuditEntityType } from '../audit/audit.constants';
 import { AuditService } from '../audit/audit.service';
 import { paginate, type PaginatedResponse } from '../common/dto/pagination.dto';
+import { isWithinDueWindow, localDayOfWeek } from '../common/utils/schedule-time';
+import { ContentSelectionService, type SelectableContent } from '../deliveries/content-selection.service';
 import { Prisma, ScheduleFrequency, SelectionStrategy } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { workspaceNotFound } from '../workspaces/workspaces.errors';
@@ -14,12 +16,19 @@ import {
 import { scheduleInvalid, streamNotFound } from './streams.errors';
 
 export type StreamRecord = Prisma.ScheduleStreamGetPayload<object>;
+export type SubscriberRecord = Prisma.UserSubscriberGetPayload<object>;
+
+export interface DueStreamSubscriber {
+  stream: StreamRecord;
+  subscriber: SubscriberRecord;
+}
 
 @Injectable()
 export class StreamsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
+    private readonly contentSelection: ContentSelectionService,
   ) {}
 
   private validateAndNormalizeDaysOfWeek(
@@ -171,6 +180,68 @@ export class StreamsService {
 
       return stream;
     });
+  }
+
+  /**
+   * The (stream, subscriber) pairs whose local `sendTime` falls inside `[now, now + windowMinutes)`
+   * right now, per PLAN.md §11.2. Due-ness is evaluated in the **subscriber's** timezone, never
+   * `ScheduleStream.timezone` (§8.1 note 8 — that field is a display-only reference value).
+   */
+  async findDueStreamSubscribers(
+    nowUtc: Date,
+    windowMinutes: number,
+  ): Promise<DueStreamSubscriber[]> {
+    const streamsWithWorkspace = await this.prisma.scheduleStream.findMany({
+      where: { isEnabled: true },
+      include: {
+        workspace: {
+          select: {
+            isActive: true,
+            subscribers: { where: { isActive: true } },
+          },
+        },
+      },
+    });
+
+    const due: DueStreamSubscriber[] = [];
+
+    for (const streamWithWorkspace of streamsWithWorkspace) {
+      const { workspace, ...stream } = streamWithWorkspace;
+
+      if (!workspace.isActive) {
+        continue;
+      }
+
+      for (const subscriber of workspace.subscribers) {
+        if (stream.frequency === ScheduleFrequency.WEEKLY) {
+          const day = localDayOfWeek(nowUtc, subscriber.timezone);
+          if (!stream.daysOfWeek.includes(day)) {
+            continue;
+          }
+        }
+
+        if (!isWithinDueWindow(nowUtc, subscriber.timezone, stream.sendTime, windowMinutes)) {
+          continue;
+        }
+
+        due.push({ stream, subscriber });
+      }
+    }
+
+    return due;
+  }
+
+  /**
+   * PLAN.md §9.5: a dry run through the same §5.14 selection algorithm `reserveRun` uses. Creates
+   * no `DeliveryRun`, reserves nothing, and has no side effects.
+   */
+  async previewNextContent(
+    id: string,
+  ): Promise<{ eligible: boolean; content: SelectableContent | null }> {
+    const stream = await this.getById(id);
+    const content = await this.contentSelection.preview(stream);
+
+    return { eligible: content !== null, content };
   }
 
   async setEnabled(

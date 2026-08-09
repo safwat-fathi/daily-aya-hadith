@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title><%= title %> · Admin</title>
+  <link rel="stylesheet" href="/static/admin.css" />
+</head>
+<body>
+  <header class="site-header">
+    <span class="brand">Aya &amp; Hadith Admin</span>
+    <nav>
+      <a href="/api/v1/admin/content" class="<%= activeNav === 'content' ? 'active' : '' %>">Content</a>
+      <a href="/api/v1/admin/streams" class="<%= activeNav === 'streams' ? 'active' : '' %>">Streams</a>
+      <a href="/api/v1/admin/subscribers" class="<%= activeNav === 'subscribers' ? 'active' : '' %>">Subscribers</a>
+    </nav>
+    <form method="POST" action="/api/v1/admin/logout">
+      <button type="submit">Log out</button>
+    </form>
+  </header>
+  <main>
+    <% if (typeof flash !== 'undefined' && flash) { %>
+      <div class="flash flash-<%= flash.type %>"><%= flash.text %></div>
+    <% } %>

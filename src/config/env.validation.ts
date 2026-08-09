@@ -9,6 +9,7 @@ export interface AppEnvironment {
   APP_BASE_URL: string;
   DATABASE_URL: string;
   ADMIN_API_KEY: string;
+  SESSION_SECRET: string;
   DEFAULT_TIMEZONE: string;
   DEFAULT_LOCALE: string;
   LOG_LEVEL: LogLevel;
@@ -41,6 +42,10 @@ const environmentSchema = Joi.object<AppEnvironment>({
   APP_BASE_URL: Joi.string().uri().default('http://localhost:3000'),
   DATABASE_URL: postgresUrl,
   ADMIN_API_KEY: Joi.string().min(32).required(),
+  // Signs the admin dashboard's session cookie (express-session). Unrelated to ADMIN_API_KEY,
+  // which the dashboard's login form still checks against to establish that session in the
+  // first place.
+  SESSION_SECRET: Joi.string().min(32).required(),
   DEFAULT_TIMEZONE: timeZone.default('Africa/Cairo'),
   DEFAULT_LOCALE: Joi.string()
     .pattern(/^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/)

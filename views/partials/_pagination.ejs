@@ -1,0 +1,11 @@
+<% if (pagination.totalPages > 1) { %>
+<nav class="pagination">
+  <% if (pagination.page > 1) { %>
+    <a class="btn" href="<%= basePath %>page=<%= pagination.page - 1 %>">&laquo; Prev</a>
+  <% } %>
+  <span class="muted">Page <%= pagination.page %> of <%= pagination.totalPages %> (<%= pagination.total %> total)</span>
+  <% if (pagination.page < pagination.totalPages) { %>
+    <a class="btn" href="<%= basePath %>page=<%= pagination.page + 1 %>">Next &raquo;</a>
+  <% } %>
+</nav>
+<% } %>

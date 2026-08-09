@@ -1,0 +1,36 @@
+<div class="field">
+  <label for="title">Title</label>
+  <input type="text" id="title" name="payload[title]" value="<%= payload.title || '' %>" />
+</div>
+<div class="field">
+  <label for="companionName">Companion name</label>
+  <input type="text" id="companionName" name="payload[companionName]" value="<%= payload.companionName || '' %>" />
+</div>
+<div class="field">
+  <label for="arabicName">Arabic name</label>
+  <input type="text" id="arabicName" name="payload[arabicName]" value="<%= payload.arabicName || '' %>" dir="rtl" />
+</div>
+<div class="field">
+  <label for="story">Story</label>
+  <textarea id="story" name="payload[story]"><%= payload.story || '' %></textarea>
+</div>
+<div class="field">
+  <label for="historicalContext">Historical context</label>
+  <textarea id="historicalContext" name="payload[historicalContext]"><%= payload.historicalContext || '' %></textarea>
+</div>
+<fieldset>
+  <legend>Lessons (up to 5 shown)</legend>
+  <% for (var lessonIndex = 0; lessonIndex < 5; lessonIndex++) { var lesson = (payload.lessons && payload.lessons[lessonIndex]) || ''; %>
+    <div class="field">
+      <input type="text" name="payload[lessons][]" value="<%= lesson %>" />
+    </div>
+  <% } %>
+</fieldset>
+<div class="field">
+  <label for="reflection">Reflection</label>
+  <textarea id="reflection" name="payload[reflection]"><%= payload.reflection || '' %></textarea>
+</div>
+<div class="field">
+  <label for="practicalAction">Practical action</label>
+  <textarea id="practicalAction" name="payload[practicalAction]"><%= payload.practicalAction || '' %></textarea>
+</div>

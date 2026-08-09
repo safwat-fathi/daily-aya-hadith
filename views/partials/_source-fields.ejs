@@ -1,0 +1,32 @@
+<fieldset>
+  <legend>Sources (up to 3 shown here; edit again to add more)</legend>
+  <p class="hint">A row with no title is ignored — leave unused rows blank.</p>
+  <% for (var sourceIndex = 0; sourceIndex < 3; sourceIndex++) { var source = sources[sourceIndex] || {}; %>
+    <div class="source-row">
+      <div class="field">
+        <label>Source type</label>
+        <select name="sources[<%= sourceIndex %>][sourceType]">
+          <% sourceTypes.forEach(function (sourceType) { %>
+            <option value="<%= sourceType %>" <%= source.sourceType === sourceType ? 'selected' : '' %>><%= sourceType %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="field">
+        <label>Title</label>
+        <input type="text" name="sources[<%= sourceIndex %>][title]" value="<%= source.title || '' %>" />
+      </div>
+      <div class="field">
+        <label>Author</label>
+        <input type="text" name="sources[<%= sourceIndex %>][author]" value="<%= source.author || '' %>" />
+      </div>
+      <div class="field">
+        <label>Reference number</label>
+        <input type="text" name="sources[<%= sourceIndex %>][referenceNumber]" value="<%= source.referenceNumber || '' %>" />
+      </div>
+      <div class="field">
+        <label>URL</label>
+        <input type="url" name="sources[<%= sourceIndex %>][url]" value="<%= source.url || '' %>" />
+      </div>
+    </div>
+  <% } %>
+</fieldset>
