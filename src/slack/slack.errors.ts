@@ -26,19 +26,19 @@ const NOT_CONFIGURED: NormalizedSlackError = {
 };
 
 /**
- * `SLACK_BOT_TOKEN` and `SLACK_TOKEN_SECRET_KEY` are optional so the application boots and
- * serves content without a Slack app. Slack operations therefore fail here, at call time, with
- * a code that is not in PLAN.md §18.2's list precisely because that list assumes a token exists.
+ * A workspace row with no `botTokenCiphertext` has no way to post: it was created through the
+ * admin API but never completed an OAuth install (or completed one and was since uninstalled).
+ * Slack operations therefore fail here, at call time, with a code that is not in PLAN.md §18.2's
+ * list precisely because that list assumes a token exists.
  */
-export function slackNotConfigured(tokenSecretKey: string): SlackOperationException {
+export function slackNotConfigured(workspaceId: string): SlackOperationException {
   return new SlackOperationException(
     HttpStatus.SERVICE_UNAVAILABLE,
     {
       statusCode: HttpStatus.SERVICE_UNAVAILABLE,
       code: 'SLACK_NOT_CONFIGURED',
-      message:
-        'Slack is not configured. Set SLACK_BOT_TOKEN and SLACK_TOKEN_SECRET_KEY, and make sure the workspace token alias matches.',
-      details: { tokenSecretKey, retryable: false },
+      message: 'This workspace has no Slack bot token. Complete the Slack OAuth install first.',
+      details: { workspaceId, retryable: false },
     },
     NOT_CONFIGURED,
   );

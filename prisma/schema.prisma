@@ -70,6 +70,18 @@ model SlackWorkspace {
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
+  /// AES-256-GCM ciphertext of the OAuth-issued bot token. Set by a self-service `/slack/install`
+  /// (§SlackOauthService); rows created through the admin API instead resolve a token via
+  /// `tokenSecretKey`'s alias (PLAN.md §5.10). Never populated with plaintext.
+  botTokenCiphertext String?
+  /// Space-delimited scopes granted at install time, as returned by `oauth.v2.access`.
+  scopes             String?
+  /// Slack app ID from the OAuth response, distinct from `slackTeamId`.
+  appId              String?
+  /// Slack user ID of whoever completed the install.
+  installedByUserId  String?
+  installedAt        DateTime?
+
   subscribers UserSubscriber[]
   streams     ScheduleStream[]
   auditEvents   AuditEvent[]

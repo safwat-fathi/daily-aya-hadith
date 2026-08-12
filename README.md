@@ -228,39 +228,57 @@ working.
 
 ## Slack setup
 
+Every workspace's bot token is obtained via OAuth and stored encrypted in its `SlackWorkspace`
+row (`src/slack-oauth/`) — there is no env-var bot token to configure by hand.
+
 1. Create a Slack app.
 2. **Enable Socket Mode** and generate an app-level token (`xapp-…`) with the `connections:write`
-   scope. Put it in `SLACK_APP_TOKEN`.
+   scope. Put it in `SLACK_APP_TOKEN`. This one token is shared by every installed workspace —
+   Socket Mode envelopes carry `team_id`, so inbound events already route to the right workspace
+   (`SlackEventsService`) without a per-workspace connection.
 3. **Slash Commands** — create `/subscribe` and `/unsubscribe`. The Request URL field is ignored
    under Socket Mode, but the commands must still be declared here or Slack rejects them locally
    with "not a valid command" before your app ever sees them.
-4. **Event Subscriptions** — enable, and under _Subscribe to bot events_ add `message.im`. This
-   is required only for the plain-text `subscribe`/`unsubscribe` DM path; the slash commands
-   don't need it.
-5. **OAuth & Permissions** — add bot scopes `chat:write` (to post) and `im:history` (to read the
-   plain-text DM path). Install (or reinstall after adding scopes) and copy the `xoxb-…` bot
-   token into `SLACK_BOT_TOKEN`.
-6. Choose any alias for `SLACK_TOKEN_SECRET_KEY`. It is an identifier, never a credential.
-7. `POST /workspaces` with `slackTeamId` and `tokenSecretKey` set to that same alias, then
-   `POST /workspaces/:id/verify-token`.
+4. **Event Subscriptions** — enable, and under _Subscribe to bot events_ add `message.im` (for
+   the plain-text `subscribe`/`unsubscribe` DM path) and `app_uninstalled` (so a workspace that
+   removes the app is deactivated automatically instead of generating failing deliveries forever).
+5. **OAuth & Permissions** — add bot scopes `chat:write`, `commands`, and `im:history` (the last
+   is what lets `message.im` reach `onMessage`'s plain-text `subscribe`/`unsubscribe` path), and
+   set the **Redirect URL** to `${APP_BASE_URL}/api/v1/slack/oauth/callback`. Copy the **Client
+   ID** and **Client Secret** from _Basic Information_ into `SLACK_CLIENT_ID`/`SLACK_CLIENT_SECRET`.
+6. Under **Manage Distribution**, turn on public distribution to get the shareable "Add to Slack"
+   link/button — this is the plain OAuth install flow below, not a Slack Marketplace submission
+   (Slack disallows Socket Mode for the latter; this app only uses the former).
+7. Generate `SLACK_TOKEN_ENCRYPTION_KEY` with `openssl rand -base64 32` (must decode to exactly
+   32 bytes) — this is the key `TokenCipherService` uses to encrypt every workspace's bot token
+   at rest, and also (via HKDF) to sign the OAuth `state` parameter.
 8. Start (or restart) the app and confirm the log line `Connected to Slack Socket Mode.`
-9. In Slack, message the app directly and send `/subscribe` (or the word `subscribe`).
+9. Visit `${APP_BASE_URL}/api/v1/slack/install` (or share that link) to install into a workspace.
+   The callback creates the `SlackWorkspace` row, encrypts its bot token, and provisions a
+   default `DAILY` / `AYAH` stream automatically — nothing to configure by hand afterward.
+10. In Slack, message the app directly and send `/subscribe` (or the word `subscribe`).
 
-The raw bot token is never stored in the database: the workspace row holds only the alias, which
-the Slack client resolves against `SLACK_TOKEN_SECRET_KEY`. `POST /workspaces` rejects a
-`tokenSecretKey` beginning with `xox` to stop a token being pasted into the column.
+The raw bot token is never stored in plaintext: `SlackClientFactory` resolves it by decrypting
+`SlackWorkspace.botTokenCiphertext` on each use, keyed by `SLACK_TOKEN_ENCRYPTION_KEY`.
+`tokenSecretKey` is retained on the row only as a human-readable label (`oauth:<teamId>` for
+OAuth installs) — it plays no role in token resolution.
 
 ### Slack error codes
 
-| Code                             | Status | Meaning                                                       |
-| -------------------------------- | ------ | ------------------------------------------------------------- |
-| `SLACK_NOT_CONFIGURED`           | 503    | No token configured, or the workspace alias does not match it |
-| `SLACK_TOKEN_INVALID`            | 502    | Slack rejected the token                                      |
-| `SLACK_TOKEN_WORKSPACE_MISMATCH` | 409    | The token belongs to a different Slack workspace              |
-| `SLACK_SEND_FAILED`              | 502    | Posting failed; 503 instead when the failure is retryable     |
-| `WORKSPACE_INACTIVE`             | 409    | The workspace record is disabled                              |
-| `SUBSCRIBER_NOT_FOUND`           | 404    | No subscriber with that ID                                    |
-| `SUBSCRIBER_ALREADY_EXISTS`      | 409    | That Slack user is already registered for this workspace      |
+| Code                                | Status | Meaning                                                       |
+| ----------------------------------- | ------ | -------------------------------------------------------------- |
+| `SLACK_NOT_CONFIGURED`              | 503    | This workspace has no `botTokenCiphertext` — install it via OAuth first |
+| `SLACK_TOKEN_INVALID`               | 502    | Slack rejected the token                                      |
+| `SLACK_TOKEN_WORKSPACE_MISMATCH`    | 409    | The token belongs to a different Slack workspace              |
+| `SLACK_SEND_FAILED`                 | 502    | Posting failed; 503 instead when the failure is retryable     |
+| `WORKSPACE_INACTIVE`                | 409    | The workspace record is disabled                              |
+| `SLACK_OAUTH_NOT_CONFIGURED`        | 503    | `SLACK_CLIENT_ID`/`SLACK_CLIENT_SECRET`/`SLACK_TOKEN_ENCRYPTION_KEY` not all set |
+| `SLACK_OAUTH_STATE_INVALID`         | 400    | The install link expired (10 min TTL), was tampered with, or `code`/`state` is missing |
+| `SLACK_OAUTH_DENIED`                | 400    | The workspace admin declined the install                      |
+| `SLACK_OAUTH_EXCHANGE_FAILED`       | 502    | Slack rejected the OAuth code exchange                        |
+| `SLACK_OAUTH_ENTERPRISE_UNSUPPORTED`| 400    | Enterprise-wide installs aren't supported; install into a single workspace |
+| `SUBSCRIBER_NOT_FOUND`              | 404    | No subscriber with that ID                                    |
+| `SUBSCRIBER_ALREADY_EXISTS`         | 409    | That Slack user is already registered for this workspace      |
 
 These carry `details.reason` with the underlying Slack code and `details.retryable`;
 rate-limited failures also carry `details.retryAfterSeconds`. Slack's own error text is never
@@ -309,9 +327,10 @@ must have a committed migration. Production deployments should run `pnpm db:migr
 | `DEFAULT_LOCALE`             | Optional, defaults to `ar`                    | Initial content locale                                                      |
 | `LOG_LEVEL`                  | Optional, defaults to `info`                  | Pino level: `fatal`, `error`, `warn`, `info`, `debug`, `trace`, or `silent` |
 | `SWAGGER_ENABLED`            | Optional, defaults to `false`                 | Serves OpenAPI docs; ignored in production                                  |
-| `SLACK_BOT_TOKEN`            | Required for any Slack operation              | Slack bot token (`xoxb-…`); redacted if logged                              |
-| `SLACK_TOKEN_SECRET_KEY`     | Required for any Slack operation              | Token alias, never a credential; must equal the workspace `tokenSecretKey`  |
 | `SLACK_APP_TOKEN`            | Required for `/subscribe` and `/unsubscribe`  | App-level token (`xapp-…`) for Socket Mode; redacted if logged              |
+| `SLACK_CLIENT_ID`            | Required for `/slack/install`                 | Slack app's OAuth client ID                                                 |
+| `SLACK_CLIENT_SECRET`        | Required for `/slack/install`                 | Slack app's OAuth client secret; redacted if logged                         |
+| `SLACK_TOKEN_ENCRYPTION_KEY` | Required for `/slack/install`                 | Base64, 32 bytes; encrypts bot tokens at rest and signs OAuth `state`       |
 | `SCHEDULER_ENABLED`          | Optional, defaults to `false`                 | Phase 4 scheduler switch                                                    |
 | `SCHEDULER_INTERVAL_MINUTES` | Optional, defaults to `5`                     | Phase 4 scheduler interval                                                  |
 | `SCHEDULER_LOCK_ID`          | Optional, defaults to `874321`                | Phase 4 PostgreSQL advisory-lock ID                                         |
@@ -320,13 +339,14 @@ must have a committed migration. Production deployments should run `pnpm db:migr
 Configuration is validated before application startup. Validation errors name invalid fields
 but do not include their values.
 
-All three Slack variables remain optional to the validator so the application boots without a
-Slack app. When `SLACK_BOT_TOKEN`/`SLACK_TOKEN_SECRET_KEY` are blank, startup logs one warning
-and every Slack endpoint returns `503 SLACK_NOT_CONFIGURED`. When `SLACK_APP_TOKEN` is blank,
-startup logs a separate warning and Socket Mode simply never connects — slash commands and DM
-opt-ins are never received, but the rest of the API is unaffected. Slack request timeouts and
-retry behavior are fixed constants, not environment variables: retries are the delivery
-records' responsibility, not the SDK's.
+All Slack variables remain optional to the validator so the application boots without a Slack
+app. When `SLACK_APP_TOKEN` is blank, startup logs a warning and Socket Mode simply never
+connects — slash commands and DM opt-ins are never received, but the rest of the API is
+unaffected. When `SLACK_TOKEN_ENCRYPTION_KEY` is blank, `/slack/install` and
+`/slack/oauth/callback` return `503 SLACK_OAUTH_NOT_CONFIGURED`, and any workspace with no
+`botTokenCiphertext` yet (never installed, or uninstalled) returns `503 SLACK_NOT_CONFIGURED`
+from posting/verify-token. Slack request timeouts and retry behavior are fixed constants, not
+environment variables: retries are the delivery records' responsibility, not the SDK's.
 
 ## Logging and errors
 

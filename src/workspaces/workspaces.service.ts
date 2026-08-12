@@ -13,7 +13,26 @@ import {
 } from './dto/workspace.dto';
 import { workspaceAlreadyExists, workspaceNotFound } from './workspaces.errors';
 
-export type WorkspaceRecord = Prisma.SlackWorkspaceGetPayload<object>;
+/**
+ * Deliberately narrower than the full row: `botTokenCiphertext`, `scopes`, `appId`,
+ * `installedByUserId` and `installedAt` are OAuth-install internals (`SlackOauthService`), not
+ * part of this admin API's documented shape (`WorkspaceResponseDto`). Ciphertext is not a live
+ * credential on its own, but there is no reason for an `X-Admin-Key` holder's response body to
+ * carry it.
+ */
+const WORKSPACE_SELECT = {
+  id: true,
+  slackTeamId: true,
+  name: true,
+  botUserId: true,
+  tokenSecretKey: true,
+  isActive: true,
+  tokenLastVerifiedAt: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.SlackWorkspaceSelect;
+
+export type WorkspaceRecord = Prisma.SlackWorkspaceGetPayload<{ select: typeof WORKSPACE_SELECT }>;
 
 export interface VerifyTokenResult {
   workspace: WorkspaceRecord;
@@ -51,6 +70,7 @@ export class WorkspacesService {
           tokenSecretKey: dto.tokenSecretKey,
           isActive: dto.isActive ?? true,
         },
+        select: WORKSPACE_SELECT,
       });
 
       await this.auditService.record(transaction, {
@@ -78,6 +98,7 @@ export class WorkspacesService {
         orderBy: { createdAt: 'desc' },
         skip,
         take: query.limit,
+        select: WORKSPACE_SELECT,
       }),
       this.prisma.slackWorkspace.count({ where }),
     ]);
@@ -86,7 +107,10 @@ export class WorkspacesService {
   }
 
   async getById(id: string): Promise<WorkspaceRecord> {
-    const workspace = await this.prisma.slackWorkspace.findUnique({ where: { id } });
+    const workspace = await this.prisma.slackWorkspace.findUnique({
+      where: { id },
+      select: WORKSPACE_SELECT,
+    });
 
     if (workspace === null) {
       throw workspaceNotFound(id);
@@ -97,7 +121,10 @@ export class WorkspacesService {
 
   async update(id: string, dto: UpdateWorkspaceDto, requestId: string): Promise<WorkspaceRecord> {
     return this.prisma.$transaction(async (transaction) => {
-      const existing = await transaction.slackWorkspace.findUnique({ where: { id } });
+      const existing = await transaction.slackWorkspace.findUnique({
+        where: { id },
+        select: { name: true, isActive: true },
+      });
 
       if (existing === null) {
         throw workspaceNotFound(id);
@@ -112,6 +139,7 @@ export class WorkspacesService {
           tokenSecretKey: dto.tokenSecretKey,
           isActive: dto.isActive,
         },
+        select: WORKSPACE_SELECT,
       });
 
       await this.auditService.record(transaction, {
@@ -143,6 +171,7 @@ export class WorkspacesService {
       const updated = await transaction.slackWorkspace.update({
         where: { id },
         data: { botUserId: identity.botUserId, tokenLastVerifiedAt: verifiedAt },
+        select: WORKSPACE_SELECT,
       });
 
       await this.auditService.record(transaction, {

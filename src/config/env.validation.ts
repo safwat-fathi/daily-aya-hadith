@@ -13,9 +13,10 @@ export interface AppEnvironment {
   DEFAULT_TIMEZONE: string;
   DEFAULT_LOCALE: string;
   LOG_LEVEL: LogLevel;
-  SLACK_BOT_TOKEN?: string;
-  SLACK_TOKEN_SECRET_KEY?: string;
   SLACK_APP_TOKEN?: string;
+  SLACK_CLIENT_ID?: string;
+  SLACK_CLIENT_SECRET?: string;
+  SLACK_TOKEN_ENCRYPTION_KEY?: string;
   SCHEDULER_ENABLED: boolean;
   SCHEDULER_INTERVAL_MINUTES: number;
   SCHEDULER_LOCK_ID: number;
@@ -58,9 +59,16 @@ const environmentSchema = Joi.object<AppEnvironment>({
   LOG_LEVEL: Joi.string()
     .valid('fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent')
     .default('info'),
-  SLACK_BOT_TOKEN: Joi.string().allow('').optional(),
-  SLACK_TOKEN_SECRET_KEY: Joi.string().allow('').optional(),
   SLACK_APP_TOKEN: Joi.string().allow('').optional(),
+  // Public OAuth "Add to Slack" install flow. Optional like SLACK_APP_TOKEN: the app still boots
+  // without them, but /slack/install and /slack/oauth/callback return a clear "not configured"
+  // error until all three are set. There is no other way to give a workspace a bot token —
+  // SlackClientFactory resolves every workspace's token from its (encrypted) database row.
+  SLACK_CLIENT_ID: Joi.string().allow('').optional(),
+  SLACK_CLIENT_SECRET: Joi.string().allow('').optional(),
+  // Base64-encoded 32-byte AES-256-GCM key that encrypts OAuth-issued bot tokens at rest
+  // (TokenCipherService). Generate with `openssl rand -base64 32`.
+  SLACK_TOKEN_ENCRYPTION_KEY: Joi.string().allow('').optional(),
   SCHEDULER_ENABLED: Joi.boolean().truthy('true').falsy('false').default(false),
   SCHEDULER_INTERVAL_MINUTES: Joi.number().integer().min(1).max(60).default(5),
   SCHEDULER_LOCK_ID: Joi.number().integer().min(1).default(874321),

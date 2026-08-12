@@ -16,6 +16,7 @@ import { SchedulerModule } from './scheduler/scheduler.module';
 import { SlackModule } from './slack/slack.module';
 import { SubscribersModule } from './subscribers/subscribers.module';
 import { SlackEventsModule } from './slack-events/slack-events.module';
+import { SlackOauthModule } from './slack-oauth/slack-oauth.module';
 import { WorkspacesModule } from './workspaces/workspaces.module';
 import { StreamsModule } from './streams/streams.module';
 
@@ -33,6 +34,7 @@ import { StreamsModule } from './streams/streams.module';
     WorkspacesModule,
     SubscribersModule,
     SlackEventsModule,
+    SlackOauthModule,
     StreamsModule,
     DeliveriesModule,
     SchedulerModule,

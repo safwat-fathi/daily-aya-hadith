@@ -1,10 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import type { WebClient } from '@slack/web-api';
+import { TokenCipherService } from '../common/crypto/token-cipher.service';
+import { hasText } from '../common/utils/text';
 import { PrismaService } from '../prisma/prisma.service';
 import { workspaceNotFound } from '../workspaces/workspaces.errors';
 import { SlackClientFactory } from './slack-client.factory';
 import { type NormalizedSlackError, normalizeSlackError } from './slack-error.mapper';
 import {
+  slackNotConfigured,
   slackSendFailed,
   slackTokenInvalid,
   slackTokenWorkspaceMismatch,
@@ -34,6 +37,7 @@ export class SlackService implements SlackGateway {
   constructor(
     private readonly prisma: PrismaService,
     private readonly clientFactory: SlackClientFactory,
+    private readonly tokenCipher: TokenCipherService,
   ) {}
 
   async verifyToken(workspaceId: string): Promise<SlackAuthIdentity> {
@@ -94,7 +98,7 @@ export class SlackService implements SlackGateway {
   private async resolveWorkspace(workspaceId: string): Promise<ResolvedWorkspace> {
     const workspace = await this.prisma.slackWorkspace.findUnique({
       where: { id: workspaceId },
-      select: { id: true, slackTeamId: true, tokenSecretKey: true, isActive: true },
+      select: { id: true, slackTeamId: true, botTokenCiphertext: true, isActive: true },
     });
 
     if (workspace === null) {
@@ -105,8 +109,14 @@ export class SlackService implements SlackGateway {
       throw workspaceInactive(workspaceId);
     }
 
+    if (!hasText(workspace.botTokenCiphertext)) {
+      throw slackNotConfigured(workspaceId);
+    }
+
+    const token = this.tokenCipher.decrypt(workspace.botTokenCiphertext);
+
     return {
-      client: this.clientFactory.getClient(workspace.tokenSecretKey),
+      client: this.clientFactory.getClientForWorkspace(workspaceId, token),
       slackTeamId: workspace.slackTeamId,
     };
   }

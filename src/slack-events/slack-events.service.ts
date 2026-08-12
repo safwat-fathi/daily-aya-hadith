@@ -1,9 +1,12 @@
 import { Inject, Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { LogLevel, SocketModeClient } from '@slack/socket-mode';
+import { AuditAction, AuditEntityType } from '../audit/audit.constants';
+import { AuditService } from '../audit/audit.service';
 import type { AppEnvironment } from '../config/env.validation';
 import { hasText } from '../common/utils/text';
 import { PrismaService } from '../prisma/prisma.service';
+import { SlackClientFactory } from '../slack/slack-client.factory';
 import { SubscribersService } from '../subscribers/subscribers.service';
 import { SLACK_GATEWAY, SlackGateway } from '../slack/slack.gateway';
 
@@ -31,6 +34,11 @@ interface MessageEnvelope {
   };
 }
 
+interface AppUninstalledEnvelope {
+  ack?: SlackAck;
+  body?: { team_id?: unknown };
+}
+
 const SUBSCRIBE_TEXT = 'You are subscribed to Daily Aya & Hadith. Send `/unsubscribe` to stop.';
 const UNSUBSCRIBE_TEXT =
   'You are unsubscribed from Daily Aya & Hadith. Send `/subscribe` to resume.';
@@ -52,6 +60,8 @@ export class SlackEventsService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly prisma: PrismaService,
     private readonly subscribersService: SubscribersService,
+    private readonly clientFactory: SlackClientFactory,
+    private readonly auditService: AuditService,
     @Inject(SLACK_GATEWAY) private readonly slackGateway: SlackGateway,
     config: ConfigService<AppEnvironment, true>,
   ) {
@@ -75,6 +85,13 @@ export class SlackEventsService implements OnModuleInit, OnModuleDestroy {
 
     this.client.on('message', (envelope: MessageEnvelope) => {
       void this.onMessage(envelope);
+    });
+
+    // Fired when a workspace admin removes the app from Slack's side. `tokens_revoked` (partial
+    // token revocation, e.g. a single user's grant) is deliberately not handled here — this only
+    // reacts to the whole-workspace uninstall signal.
+    this.client.on('app_uninstalled', (envelope: AppUninstalledEnvelope) => {
+      void this.onAppUninstalled(envelope);
     });
 
     try {
@@ -130,6 +147,45 @@ export class SlackEventsService implements OnModuleInit, OnModuleDestroy {
     if (normalized === 'subscribe' || normalized === 'unsubscribe') {
       await this.handleSubscriptionToggle(teamId, userId, normalized === 'subscribe');
     }
+  }
+
+  private async onAppUninstalled({ body, ack }: AppUninstalledEnvelope): Promise<void> {
+    await ack?.();
+
+    const teamId = body?.team_id;
+
+    if (!hasText(teamId)) {
+      return;
+    }
+
+    const workspace = await this.prisma.slackWorkspace.findUnique({ where: { slackTeamId: teamId } });
+
+    // Nothing to deactivate, or already deactivated by a prior delivery of this event.
+    if (workspace === null || !workspace.isActive) {
+      return;
+    }
+
+    await this.prisma.$transaction(async (transaction) => {
+      await transaction.slackWorkspace.update({
+        where: { id: workspace.id },
+        data: { isActive: false, botTokenCiphertext: null },
+      });
+
+      await this.auditService.record(transaction, {
+        actorId: 'slack-app-uninstalled-event',
+        action: AuditAction.WORKSPACE_UNINSTALLED,
+        entityType: AuditEntityType.WORKSPACE,
+        entityId: workspace.id,
+        workspaceId: workspace.id,
+        metadata: { slackTeamId: teamId },
+      });
+    });
+
+    // Without this, a cached client holding the now-revoked token would keep being reused until
+    // process restart, generating failing deliveries for a workspace that no longer exists.
+    this.clientFactory.evict(workspace.id);
+
+    this.logger.log({ event: 'slack_workspace_uninstalled', slackTeamId: teamId });
   }
 
   private async handleSubscriptionToggle(
