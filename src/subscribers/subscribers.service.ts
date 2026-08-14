@@ -119,6 +119,7 @@ export class SubscribersService {
           timezone: dto.timezone,
           locale: dto.locale,
           isActive: dto.isActive,
+          sendTime: dto.sendTime,
         },
       });
 
@@ -130,8 +131,18 @@ export class SubscribersService {
         workspaceId: existing.workspaceId,
         requestId,
         metadata: {
-          before: { isActive: existing.isActive, locale: existing.locale },
-          after: { isActive: subscriber.isActive, locale: subscriber.locale },
+          before: {
+            isActive: existing.isActive,
+            locale: existing.locale,
+            timezone: existing.timezone,
+            sendTime: existing.sendTime,
+          },
+          after: {
+            isActive: subscriber.isActive,
+            locale: subscriber.locale,
+            timezone: subscriber.timezone,
+            sendTime: subscriber.sendTime,
+          },
         },
       });
 

@@ -19,8 +19,10 @@ import {
 
 /**
  * `im:history` is required for `SlackEventsService.onMessage`'s plain-text `subscribe`/
- * `unsubscribe` DM path (`message.im` events); `commands` for `/subscribe`/`/unsubscribe`.
- * Omitting either would silently regress a feature the app already ships.
+ * `unsubscribe` DM path (`message.im` events); `commands` for every slash command
+ * (`/subscribe`, `/unsubscribe`, `/settings`, `/aya`, `/hadith`) — `/settings`/`/aya`/`/hadith`
+ * have no DM-text equivalent, so they need `commands` but not an extra `im:history` grant.
+ * Omitting either scope would silently regress a feature the app already ships.
  */
 export const OAUTH_BOT_SCOPES = ['chat:write', 'commands', 'im:history'] as const;
 

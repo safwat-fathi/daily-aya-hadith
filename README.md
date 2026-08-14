@@ -167,7 +167,7 @@ status, so an editor can see a draft take shape:
 
 ```json
 {
-  "rendererVersion": "ayah-v1",
+  "rendererVersion": "ayah-v2",
   "text": "plain-text notification fallback",
   "blocks": [],
   "warnings": ["limit.section_split"],
@@ -202,8 +202,15 @@ Renderer guarantees:
 - A source URL becomes a link only when it parses as `http`/`https`; otherwise the citation is
   plain text and `render.url_not_linkable` is reported.
 
-Renderer versions (`ayah-v1`, `hadith-v1`, `companion-story-v1`, `blessing-reminder-v1`) are
+Renderer versions (`ayah-v2`, `hadith-v1`, `companion-story-v1`, `blessing-reminder-v1`) are
 returned with every preview and change only when block structure changes, never for wording.
+
+`AYAH`/`HADITH` also render in a second locale: every `DeliveryRun` stores both the canonical
+(stream-locale) snapshot and an `'en'` one (`renderedText`/`renderedBlocks` and `renderedTextEn`/
+`renderedBlocksEn`), and each subscriber's delivery picks the variant matching their own
+`UserSubscriber.locale` — see "Subscriber model" below. The `'en'` render leads with the stored
+`translation` field, falling back to the Arabic text when no translation is stored.
+`COMPANION_STORY`/`BLESSING_REMINDER` have no translation field and always render in Arabic.
 
 ## Subscriber model
 
@@ -219,6 +226,19 @@ Users opt in themselves once the app is installed and Socket Mode is running:
 - `/unsubscribe`, or the word `unsubscribe`, sets it inactive.
 - Repeating the same command is a no-op: one row per `(workspaceId, slackUserId)`, enforced by
   a unique index, is created or updated — never duplicated.
+
+Three more slash commands are available to anyone who can message the bot, subscribed or not —
+unlike `/subscribe`/`/unsubscribe`, these have no plain-text DM equivalent:
+
+- `/settings` — shows the caller's current send time, timezone, and content language, with hints
+  on how to change each. `/settings time HH:mm` sets a personal send-time override (`/settings
+time default` clears it back to each stream's own `sendTime`); `/settings timezone <IANA zone>`
+  sets their timezone; `/settings language ar|en` sets which rendered variant they receive (see
+  "Renderer versions" above). None of these implicitly subscribe someone — only `/subscribe` does
+  that.
+- `/aya` and `/hadith` — instantly send a random `APPROVED` verse or hadith, in the caller's own
+  content language. Unlike the scheduled daily/weekly send, this ignores the least-recently-sent
+  rotation and posts immediately, outside any stream's cycle.
 
 This is handled by `SlackEventsService` over **Socket Mode** (`@slack/socket-mode`), which needs
 no public URL or ngrok tunnel — the app opens an outbound WebSocket connection to Slack and
@@ -236,9 +256,9 @@ row (`src/slack-oauth/`) — there is no env-var bot token to configure by hand.
    scope. Put it in `SLACK_APP_TOKEN`. This one token is shared by every installed workspace —
    Socket Mode envelopes carry `team_id`, so inbound events already route to the right workspace
    (`SlackEventsService`) without a per-workspace connection.
-3. **Slash Commands** — create `/subscribe` and `/unsubscribe`. The Request URL field is ignored
-   under Socket Mode, but the commands must still be declared here or Slack rejects them locally
-   with "not a valid command" before your app ever sees them.
+3. **Slash Commands** — create `/subscribe`, `/unsubscribe`, `/settings`, `/aya`, and `/hadith`.
+   The Request URL field is ignored under Socket Mode, but every command must still be declared
+   here or Slack rejects it locally with "not a valid command" before your app ever sees it.
 4. **Event Subscriptions** — enable, and under _Subscribe to bot events_ add `message.im` (for
    the plain-text `subscribe`/`unsubscribe` DM path) and `app_uninstalled` (so a workspace that
    removes the app is deactivated automatically instead of generating failing deliveries forever).
@@ -265,20 +285,20 @@ OAuth installs) — it plays no role in token resolution.
 
 ### Slack error codes
 
-| Code                                | Status | Meaning                                                       |
-| ----------------------------------- | ------ | -------------------------------------------------------------- |
-| `SLACK_NOT_CONFIGURED`              | 503    | This workspace has no `botTokenCiphertext` — install it via OAuth first |
-| `SLACK_TOKEN_INVALID`               | 502    | Slack rejected the token                                      |
-| `SLACK_TOKEN_WORKSPACE_MISMATCH`    | 409    | The token belongs to a different Slack workspace              |
-| `SLACK_SEND_FAILED`                 | 502    | Posting failed; 503 instead when the failure is retryable     |
-| `WORKSPACE_INACTIVE`                | 409    | The workspace record is disabled                              |
-| `SLACK_OAUTH_NOT_CONFIGURED`        | 503    | `SLACK_CLIENT_ID`/`SLACK_CLIENT_SECRET`/`SLACK_TOKEN_ENCRYPTION_KEY` not all set |
-| `SLACK_OAUTH_STATE_INVALID`         | 400    | The install link expired (10 min TTL), was tampered with, or `code`/`state` is missing |
-| `SLACK_OAUTH_DENIED`                | 400    | The workspace admin declined the install                      |
-| `SLACK_OAUTH_EXCHANGE_FAILED`       | 502    | Slack rejected the OAuth code exchange                        |
-| `SLACK_OAUTH_ENTERPRISE_UNSUPPORTED`| 400    | Enterprise-wide installs aren't supported; install into a single workspace |
-| `SUBSCRIBER_NOT_FOUND`              | 404    | No subscriber with that ID                                    |
-| `SUBSCRIBER_ALREADY_EXISTS`         | 409    | That Slack user is already registered for this workspace      |
+| Code                                 | Status | Meaning                                                                                |
+| ------------------------------------ | ------ | -------------------------------------------------------------------------------------- |
+| `SLACK_NOT_CONFIGURED`               | 503    | This workspace has no `botTokenCiphertext` — install it via OAuth first                |
+| `SLACK_TOKEN_INVALID`                | 502    | Slack rejected the token                                                               |
+| `SLACK_TOKEN_WORKSPACE_MISMATCH`     | 409    | The token belongs to a different Slack workspace                                       |
+| `SLACK_SEND_FAILED`                  | 502    | Posting failed; 503 instead when the failure is retryable                              |
+| `WORKSPACE_INACTIVE`                 | 409    | The workspace record is disabled                                                       |
+| `SLACK_OAUTH_NOT_CONFIGURED`         | 503    | `SLACK_CLIENT_ID`/`SLACK_CLIENT_SECRET`/`SLACK_TOKEN_ENCRYPTION_KEY` not all set       |
+| `SLACK_OAUTH_STATE_INVALID`          | 400    | The install link expired (10 min TTL), was tampered with, or `code`/`state` is missing |
+| `SLACK_OAUTH_DENIED`                 | 400    | The workspace admin declined the install                                               |
+| `SLACK_OAUTH_EXCHANGE_FAILED`        | 502    | Slack rejected the OAuth code exchange                                                 |
+| `SLACK_OAUTH_ENTERPRISE_UNSUPPORTED` | 400    | Enterprise-wide installs aren't supported; install into a single workspace             |
+| `SUBSCRIBER_NOT_FOUND`               | 404    | No subscriber with that ID                                                             |
+| `SUBSCRIBER_ALREADY_EXISTS`          | 409    | That Slack user is already registered for this workspace                               |
 
 These carry `details.reason` with the underlying Slack code and `details.retryable`;
 rate-limited failures also carry `details.retryAfterSeconds`. Slack's own error text is never

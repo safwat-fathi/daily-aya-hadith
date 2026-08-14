@@ -1,39 +1,175 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Support - Daily Aya & Hadith</title>
     <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-50 min-h-screen p-6 md:p-12 text-gray-800">
-    <div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-sm p-8 md:p-12 text-center">
-        <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-2xl mx-auto mb-6">
-            💬
-        </div>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <script>
+      const savedLang = localStorage.getItem('preferred_lang') || 'ar';
+      document.documentElement.setAttribute('data-active-lang', savedLang);
+      document.documentElement.lang = savedLang;
+      document.documentElement.dir = savedLang === 'ar' ? 'rtl' : 'ltr';
+
+      function setLanguage(lang) {
+        localStorage.setItem('preferred_lang', lang);
+        document.documentElement.setAttribute('data-active-lang', lang);
+        document.documentElement.lang = lang;
+        document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+      }
+    </script>
+    <style>
+      [data-active-lang='en'] [data-lang='ar'] {
+        display: none !important;
+      }
+      [data-active-lang='ar'] [data-lang='en'] {
+        display: none !important;
+      }
+      [data-lang='ar'] {
+        font-family: 'IBM Plex Sans Arabic', sans-serif;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-50 min-h-screen p-6 md:p-12 text-gray-800 relative">
+    <!-- Language Toggle -->
+    <div
+      class="absolute top-4 right-4 flex gap-2 text-gray-600 bg-white px-3 py-1 rounded-full shadow-sm"
+      dir="ltr"
+      style="left: auto; right: 1rem"
+    >
+      <button
+        onclick="setLanguage('en')"
+        class="text-sm font-medium hover:text-blue-600 focus:outline-none"
+      >
+        English
+      </button>
+      <span class="text-gray-300">|</span>
+      <button
+        onclick="setLanguage('ar')"
+        class="text-sm font-medium hover:text-blue-600 focus:outline-none"
+      >
+        العربية
+      </button>
+    </div>
+
+    <div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-sm p-8 md:p-12 text-center mt-8">
+      <div
+        class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-2xl mx-auto mb-6"
+      >
+        💬
+      </div>
+
+      <!-- English Content -->
+      <div data-lang="en">
         <h1 class="text-3xl font-extrabold text-gray-900 mb-4">How can we help?</h1>
         <p class="text-lg text-gray-600 mb-8 leading-relaxed">
-            If you are experiencing issues with the Daily Aya & Hadith Slack bot, have feature requests, or need assistance configuring your workspace, we are here to help!
+          If you are experiencing issues with the Daily Aya & Hadith Slack bot, have feature
+          requests, or need assistance configuring your workspace, we are here to help!
         </p>
 
         <div class="bg-gray-50 rounded-xl p-6 mb-8 text-left border border-gray-100">
-            <h3 class="font-bold text-gray-900 mb-2">Common Issues:</h3>
-            <ul class="list-disc pl-5 space-y-2 text-gray-600">
-                <li>Bot is not sending daily messages? Ensure it has been invited to the channel (`/invite @Daily Aya and Hadith`).</li>
-                <li>Want to change delivery time? Use the `/settings` or `/subscribe` command in Slack.</li>
-            </ul>
+          <h3 class="font-bold text-gray-900 mb-2">Common Issues:</h3>
+          <ul class="list-disc pl-5 space-y-2 text-gray-600">
+            <li>
+              Bot is not sending daily messages? Ensure it has been invited to the channel (<code
+                class="bg-gray-200 px-1 py-0.5 rounded text-sm font-mono text-pink-600"
+                >/invite @Daily Aya and Hadith</code
+              >).
+            </li>
+            <li>
+              Want to change delivery time? Use the
+              <code class="bg-gray-200 px-1 py-0.5 rounded text-sm font-mono text-pink-600"
+                >/settings</code
+              >
+              or
+              <code class="bg-gray-200 px-1 py-0.5 rounded text-sm font-mono text-pink-600"
+                >/subscribe</code
+              >
+              command in Slack.
+            </li>
+          </ul>
         </div>
 
         <p class="text-gray-600 mb-4">Reach out to us directly via email:</p>
-        <a href="mailto:support@yourdomain.com" class="inline-block bg-blue-600 text-white font-semibold px-8 py-3 rounded-lg shadow-sm hover:bg-blue-700 transition-colors">
-            Email Support Team
+        <a
+          href="mailto:safwat.rashwan@gmail.com"
+          class="inline-block bg-blue-600 text-white font-semibold px-8 py-3 rounded-lg shadow-sm hover:bg-blue-700 transition-colors"
+        >
+          Email Support Team
         </a>
-        <p class="mt-4 text-sm text-gray-500">support@yourdomain.com</p>
+      </div>
 
-        <div class="mt-12 pt-6 border-t border-gray-100 flex justify-center space-x-6 text-sm text-gray-500">
-            <a href="/static/install.html" class="hover:text-blue-600 transition-colors">Installation</a>
-            <a href="/static/privacy.html" class="hover:text-blue-600 transition-colors">Privacy Policy</a>
+      <!-- Arabic Content -->
+      <div data-lang="ar">
+        <h1 class="text-3xl font-extrabold text-gray-900 mb-4">كيف يمكننا مساعدتك؟</h1>
+        <p class="text-lg text-gray-600 mb-8 leading-relaxed">
+          إذا كنت تواجه مشاكل مع تطبيق "آية وحديث كل يوم" على سلاك، أو كان لديك طلبات لميزات جديدة،
+          أو تحتاج إلى مساعدة في إعداد مساحة العمل الخاصة بك، نحن هنا للمساعدة!
+        </p>
+
+        <div class="bg-gray-50 rounded-xl p-6 mb-8 text-right border border-gray-100">
+          <h3 class="font-bold text-gray-900 mb-2">المشاكل الشائعة:</h3>
+          <ul class="list-disc pr-5 space-y-2 text-gray-600">
+            <li>
+              البوت لا يرسل الرسائل اليومية؟ تأكد من دعوتك له إلى القناة <br />
+              <code
+                class="bg-gray-200 px-1 py-0.5 rounded text-sm font-mono text-pink-600"
+                dir="ltr"
+                >/invite @Daily Aya and Hadith</code
+              >.
+            </li>
+            <li>
+              تريد تغيير وقت الإرسال؟ استخدم أمر
+              <code
+                class="bg-gray-200 px-1 py-0.5 rounded text-sm font-mono text-pink-600"
+                dir="ltr"
+                >/settings</code
+              >
+              أو
+              <code
+                class="bg-gray-200 px-1 py-0.5 rounded text-sm font-mono text-pink-600"
+                dir="ltr"
+                >/subscribe</code
+              >
+              داخل سلاك.
+            </li>
+          </ul>
         </div>
+
+        <p class="text-gray-600 mb-4">تواصل معنا مباشرة عبر البريد الإلكتروني:</p>
+        <a
+          href="mailto:safwat.rashwan@gmail.com"
+          class="inline-block bg-blue-600 text-white font-semibold px-8 py-3 rounded-lg shadow-sm hover:bg-blue-700 transition-colors"
+        >
+          مراسلة فريق الدعم
+        </a>
+      </div>
+
+      <p class="mt-4 text-sm text-gray-500" dir="ltr">safwat.rashwan@gmail.com</p>
+
+      <div
+        class="mt-12 pt-6 border-t border-gray-100 flex justify-center gap-6 text-sm text-gray-500"
+      >
+        <a href="/static/install.html" class="hover:text-blue-600 transition-colors">
+          <span data-lang="en">Installation</span>
+          <span data-lang="ar">الرئيسية</span>
+        </a>
+        <a href="/static/privacy.html" class="hover:text-blue-600 transition-colors">
+          <span data-lang="en">Privacy Policy</span>
+          <span data-lang="ar">سياسة الخصوصية</span>
+        </a>
+        <a href="/static/tos.html" class="hover:text-blue-600 transition-colors">
+          <span data-lang="en">Terms of Service</span>
+          <span data-lang="ar">شروط الخدمة</span>
+        </a>
+      </div>
     </div>
-</body>
+  </body>
 </html>

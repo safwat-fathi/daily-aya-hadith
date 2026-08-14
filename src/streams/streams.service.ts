@@ -3,7 +3,10 @@ import { AuditAction, AuditEntityType } from '../audit/audit.constants';
 import { AuditService } from '../audit/audit.service';
 import { paginate, type PaginatedResponse } from '../common/dto/pagination.dto';
 import { isWithinDueWindow, localDayOfWeek } from '../common/utils/schedule-time';
-import { ContentSelectionService, type SelectableContent } from '../deliveries/content-selection.service';
+import {
+  ContentSelectionService,
+  type SelectableContent,
+} from '../deliveries/content-selection.service';
 import { Prisma, ScheduleFrequency, SelectionStrategy } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { workspaceNotFound } from '../workspaces/workspaces.errors';
@@ -185,7 +188,10 @@ export class StreamsService {
   /**
    * The (stream, subscriber) pairs whose local `sendTime` falls inside `[now, now + windowMinutes)`
    * right now, per PLAN.md §11.2. Due-ness is evaluated in the **subscriber's** timezone, never
-   * `ScheduleStream.timezone` (§8.1 note 8 — that field is a display-only reference value).
+   * `ScheduleStream.timezone` (§8.1 note 8 — that field is a display-only reference value). The
+   * `sendTime` itself is the subscriber's own personal override (`/settings time`) when set,
+   * falling back to the stream's `sendTime` otherwise — content selection is unaffected either
+   * way, since that's still one selection per stream per calendar date.
    */
   async findDueStreamSubscribers(
     nowUtc: Date,
@@ -220,7 +226,8 @@ export class StreamsService {
           }
         }
 
-        if (!isWithinDueWindow(nowUtc, subscriber.timezone, stream.sendTime, windowMinutes)) {
+        const sendTime = subscriber.sendTime ?? stream.sendTime;
+        if (!isWithinDueWindow(nowUtc, subscriber.timezone, sendTime, windowMinutes)) {
           continue;
         }
 

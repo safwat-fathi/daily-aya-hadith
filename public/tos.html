@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terms of Service - Daily Aya & Hadith</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        const savedLang = localStorage.getItem('preferred_lang') || 'ar';
+        document.documentElement.setAttribute('data-active-lang', savedLang);
+        document.documentElement.lang = savedLang;
+        document.documentElement.dir = savedLang === 'ar' ? 'rtl' : 'ltr';
+
+        function setLanguage(lang) {
+            localStorage.setItem('preferred_lang', lang);
+            document.documentElement.setAttribute('data-active-lang', lang);
+            document.documentElement.lang = lang;
+            document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+        }
+    </script>
+    <style>
+        [data-active-lang="en"] [data-lang="ar"] { display: none !important; }
+        [data-active-lang="ar"] [data-lang="en"] { display: none !important; }
+        [data-lang="ar"] { font-family: 'IBM Plex Sans Arabic', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen p-6 md:p-12 text-gray-800 relative">
+    
+    <!-- Language Toggle -->
+    <div class="absolute top-4 right-4 flex gap-2 text-gray-600 bg-white px-3 py-1 rounded-full shadow-sm" dir="ltr" style="left: auto; right: 1rem;">
+        <button onclick="setLanguage('en')" class="text-sm font-medium hover:text-emerald-600 focus:outline-none">English</button>
+        <span class="text-gray-300">|</span>
+        <button onclick="setLanguage('ar')" class="text-sm font-medium hover:text-emerald-600 focus:outline-none">العربية</button>
+    </div>
+
+    <div class="max-w-3xl mx-auto bg-white rounded-2xl shadow-sm p-8 md:p-12 mt-8">
+        
+        <!-- English Content -->
+        <div data-lang="en">
+            <h1 class="text-3xl font-extrabold text-gray-900 mb-6">Terms of Service</h1>
+            <p class="text-gray-500 mb-8">Last Updated: August 14, 2026</p>
+
+            <div class="space-y-8 text-lg leading-relaxed">
+                <section>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-3">1. Acceptance of Terms</h2>
+                    <p>By installing and using the Daily Aya & Hadith Slack app, you agree to these Terms of Service. If you do not agree to these terms, please do not use the service.</p>
+                </section>
+
+                <section>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-3">2. Description of Service</h2>
+                    <p>Daily Aya & Hadith is a Slack integration that provides daily Islamic verses (Ayas) and prophetic traditions (Hadiths) to specified Slack channels based on your configuration.</p>
+                </section>
+
+                <section>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-3">3. User Responsibilities</h2>
+                    <p>You are responsible for ensuring that you have the necessary permissions within your Slack workspace to install and configure this app. The app must not be used in any way that violates Slack's Acceptable Use Policy.</p>
+                </section>
+
+                <section>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-3">4. Disclaimer of Warranties</h2>
+                    <p>This service is provided "as is" and "as available" without warranties of any kind. We do not guarantee that the service will be uninterrupted or error-free.</p>
+                </section>
+
+                <section>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-3">5. Limitation of Liability</h2>
+                    <p>We shall not be liable for any indirect, incidental, or consequential damages resulting from the use or inability to use the service.</p>
+                </section>
+            </div>
+        </div>
+
+        <!-- Arabic Content -->
+        <div data-lang="ar">
+            <h1 class="text-3xl font-extrabold text-gray-900 mb-6">شروط الخدمة</h1>
+            <p class="text-gray-500 mb-8">آخر تحديث: ١٤ أغسطس ٢٠٢٦</p>
+
+            <div class="space-y-8 text-lg leading-relaxed">
+                <section>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-3">١. قبول الشروط</h2>
+                    <p>من خلال تثبيت واستخدام تطبيق "آية وحديث كل يوم" على سلاك، فإنك توافق على شروط الخدمة هذه. إذا كنت لا توافق على هذه الشروط، يُرجى عدم استخدام الخدمة.</p>
+                </section>
+
+                <section>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-3">٢. وصف الخدمة</h2>
+                    <p>تطبيق "آية وحديث كل يوم" هو إضافة لسلاك توفر آيات قرآنية وأحاديث نبوية يومية للقنوات المحددة بناءً على إعداداتك.</p>
+                </section>
+
+                <section>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-3">٣. مسؤوليات المستخدم</h2>
+                    <p>أنت مسؤول عن التأكد من أن لديك الصلاحيات اللازمة داخل مساحة عمل سلاك لتثبيت هذا التطبيق وإعداده. يجب ألا يُستخدم التطبيق بأي طريقة تنتهك سياسة الاستخدام المقبول الخاصة بسلاك.</p>
+                </section>
+
+                <section>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-3">٤. إخلاء المسؤولية من الضمانات</h2>
+                    <p>يتم تقديم هذه الخدمة "كما هي" و"كما هي متاحة" دون أي ضمانات من أي نوع. لا نضمن أن تكون الخدمة خالية من الانقطاعات أو الأخطاء.</p>
+                </section>
+
+                <section>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-3">٥. حدود المسؤولية</h2>
+                    <p>لن نكون مسؤولين عن أي أضرار غير مباشرة أو عرضية أو تبعية ناتجة عن استخدام الخدمة أو عدم القدرة على استخدامها.</p>
+                </section>
+            </div>
+        </div>
+
+        <div class="mt-12 pt-6 border-t border-gray-100 flex justify-between items-center">
+            <a href="/static/install.html" class="text-emerald-600 hover:text-emerald-700 font-medium flex items-center gap-2">
+                <span data-lang="en">&larr; Back to Installation</span>
+                <span data-lang="ar">&rarr; العودة للرئيسية</span>
+            </a>
+            <a href="/static/privacy.html" class="text-gray-500 hover:text-emerald-600 text-sm">
+                <span data-lang="en">Privacy Policy</span>
+                <span data-lang="ar">سياسة الخصوصية</span>
+            </a>
+        </div>
+    </div>
+</body>
+</html>

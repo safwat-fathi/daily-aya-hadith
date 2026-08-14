@@ -26,9 +26,11 @@ const CONTENT_EXCEEDS_SEND_LIMITS = 'CONTENT_EXCEEDS_SEND_LIMITS';
  * PLAN.md §5.23: only warnings that stem from a Slack-enforced hard limit refuse a send.
  * `SOFT_BUDGET` is explicitly "advisory only" (`slack-text.ts`) and must never be included here —
  * the full ayah template routinely clears the soft 3,000-character budget while rendering
- * correctly, so refusing on it would make ordinary content permanently unsendable.
+ * correctly, so refusing on it would make ordinary content permanently unsendable. Exported so
+ * `SlackEventsService`'s instant `/aya`/`/hadith` commands — which render and post directly,
+ * outside this file's reservation/retry path — apply the same refusal rule.
  */
-const SEND_BLOCKING_WARNINGS: readonly string[] = [
+export const SEND_BLOCKING_WARNINGS: readonly string[] = [
   RenderWarning.BLOCK_COUNT,
   RenderWarning.SECTION_SPLIT,
 ];
@@ -53,9 +55,12 @@ const SENDING_STALE_RECOVERY_MS = 2 * 60_000;
 /**
  * PLAN.md §11.4–§11.5: the two-level reservation transaction plus the send/retry path that
  * consumes it. `reserveRun` and `reserveSubscriberDelivery` are the only places `DeliveryRun`/
- * `ContentDelivery` rows are created; `sendDelivery` is the only place a Slack message is posted,
- * and it is reused unchanged by the first attempt, the admin retry endpoint, and the automatic
- * retry sweep — always resending the run's stored snapshot, never re-rendering (§12.5).
+ * `ContentDelivery` rows are created; `sendDelivery` is the only place a *scheduled or retried*
+ * delivery posts a Slack message, and it is reused unchanged by the first attempt, the admin
+ * retry endpoint, and the automatic retry sweep — always resending the run's stored snapshot,
+ * never re-rendering (§12.5). The instant `/aya`/`/hadith` commands (`SlackEventsService`) post
+ * directly through `SlackGateway` instead, deliberately outside this reservation/retry machinery
+ * — they are on-demand, single-shot sends with no `DeliveryRun`/`ContentDelivery` bookkeeping.
  */
 @Injectable()
 export class DeliveryOrchestratorService {
@@ -204,6 +209,8 @@ export class DeliveryOrchestratorService {
       });
     }
 
+    // The canonical render, in the stream's own locale — this is what gates the whole run and is
+    // what every subscriber gets unless their own `locale` matches the secondary render below.
     const rendered = this.blockRenderer.render(content, { locale: stream.locale });
     const exceedsSendLimits = rendered.warnings.some((warning) =>
       SEND_BLOCKING_WARNINGS.includes(warning),
@@ -239,6 +246,15 @@ export class DeliveryOrchestratorService {
       });
     }
 
+    // `'en'` is the only other supported locale (`UserSubscriber.locale`) — rendered
+    // unconditionally alongside the canonical one so any subscriber on this run can receive their
+    // own language, per PLAN.md's original "one shared cycle" design extended to "one shared
+    // cycle, rendered once per supported locale". Unlike the canonical render above, an oversize
+    // `'en'` render does *not* skip the run — it's stored as-is, and if Slack itself rejects it at
+    // send time, only that one subscriber's delivery fails and retries, same as any other send
+    // failure (see `sendDelivery`).
+    const renderedEn = this.blockRenderer.render(content, { locale: 'en' });
+
     const run = await tx.deliveryRun.create({
       data: {
         streamId: stream.id,
@@ -249,6 +265,8 @@ export class DeliveryOrchestratorService {
         scheduledFor: this.computeScheduledFor(stream, localDate),
         renderedText: rendered.text,
         renderedBlocks: toInputJsonArray(rendered.blocks),
+        renderedTextEn: renderedEn.text,
+        renderedBlocksEn: toInputJsonArray(renderedEn.blocks),
         rendererVersion: rendered.rendererVersion,
       },
     });
@@ -283,9 +301,10 @@ export class DeliveryOrchestratorService {
   }
 
   /**
-   * The only place a Slack message is posted. Reused unchanged by the first attempt, the admin
-   * retry endpoint, and the automatic sweep: every caller resends `run.renderedText`/
-   * `renderedBlocks` exactly as originally rendered.
+   * The only place a *scheduled or retried* delivery posts a Slack message (the instant
+   * `/aya`/`/hadith` commands post separately — see the class docstring). Reused unchanged by the
+   * first attempt, the admin retry endpoint, and the automatic sweep: every caller resends
+   * exactly the locale variant originally picked for this subscriber, never re-rendering.
    */
   async sendDelivery(deliveryId: string): Promise<void> {
     const delivery = await this.prisma.contentDelivery.findUniqueOrThrow({
@@ -297,6 +316,20 @@ export class DeliveryOrchestratorService {
 
     if (run.renderedText === null || run.renderedBlocks === null) {
       throw new Error(`Delivery run "${run.id}" has no rendered snapshot; cannot send.`);
+    }
+
+    // Canonical by default; the `'en'` variant only when the subscriber asked for it *and* one
+    // was actually rendered for this run (older rows predating `renderedTextEn` fall back here
+    // too, since both are null on them).
+    let renderedText = run.renderedText;
+    let renderedBlocks = run.renderedBlocks as unknown as KnownBlock[];
+    if (
+      subscriber.locale === 'en' &&
+      run.renderedTextEn !== null &&
+      run.renderedBlocksEn !== null
+    ) {
+      renderedText = run.renderedTextEn;
+      renderedBlocks = run.renderedBlocksEn as unknown as KnownBlock[];
     }
 
     const attemptCount = delivery.attemptCount + 1;
@@ -340,8 +373,8 @@ export class DeliveryOrchestratorService {
     try {
       const result = await this.slackGateway.postMessage(run.stream.workspaceId, {
         channel: subscriber.slackUserId,
-        text: run.renderedText,
-        blocks: run.renderedBlocks as unknown as KnownBlock[],
+        text: renderedText,
+        blocks: renderedBlocks,
       });
 
       await this.prisma.contentDelivery.update({

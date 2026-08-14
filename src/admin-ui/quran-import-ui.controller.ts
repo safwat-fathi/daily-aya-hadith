@@ -14,7 +14,7 @@ import { str } from './content-form.helpers';
 import { extractErrorMessage, readFlash, setFlash } from './flash';
 
 const MIN_COUNT = 1;
-const MAX_COUNT = 20;
+const MAX_COUNT = 100;
 
 function clampCount(raw: unknown): number {
   const parsed = Number(raw);
@@ -81,18 +81,28 @@ export class QuranImportUiController {
       this.client.listTranslations().catch(() => []),
       this.client.listTafsirs().catch(() => []),
     ]);
+    const defaults = this.client.getDefaultResourceIds();
+    const languages = distinctLanguages([translations, tafsirs]);
+
+    // Default to Arabic, but only if the configured default tafsir (As-Sa'di) actually survives
+    // that filter — otherwise the Tafsir dropdown would silently lose its default option and the
+    // browser would pre-select some other Arabic tafsir with no warning.
+    const arabicTafsirs = filterByLanguage(tafsirs, 'arabic');
+    const arabicDefaultAvailable = arabicTafsirs.some((t) => t.id === defaults.tafsirResourceId);
+    const defaultLanguage = languages.includes('arabic') && arabicDefaultAvailable ? 'arabic' : '';
+    const effectiveLanguage = language ?? defaultLanguage;
 
     response.render('quran-import/index', {
       title: 'Import from Quran.Foundation',
       activeNav: 'quran-import',
       flash: readFlash(request),
       next,
-      languages: distinctLanguages([translations, tafsirs]),
-      selectedLanguage: language ?? '',
-      translations: filterByLanguage(translations, language),
-      tafsirs: filterByLanguage(tafsirs, language),
+      languages,
+      selectedLanguage: effectiveLanguage,
+      translations: filterByLanguage(translations, effectiveLanguage),
+      tafsirs: filterByLanguage(tafsirs, effectiveLanguage),
       resourceListsAvailable: translations.length > 0 || tafsirs.length > 0,
-      defaults: this.client.getDefaultResourceIds(),
+      defaults,
     });
   }
 

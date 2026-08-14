@@ -81,23 +81,34 @@ model SlackWorkspace {
   /// Slack user ID of whoever completed the install.
   installedByUserId  String?
   installedAt        DateTime?
+  /// Set once, by `SlackEventsService.onAppUninstalled`, when Slack fires `app_uninstalled`.
+  /// Drives the grace-period purge sweep (`WorkspacePurgeService`); never cleared afterward.
+  uninstalledAt       DateTime?
 
   subscribers UserSubscriber[]
   streams     ScheduleStream[]
   auditEvents   AuditEvent[]
 
-  @@index([isActive])
+  @@index([isActive, uninstalledAt])
 }
 
 model UserSubscriber {
   id          String   @id @default(cuid())
   workspaceId String
   slackUserId String
-  /// Governs *when* this person is sent to: the scheduler evaluates `ScheduleStream.sendTime`
-  /// against this zone, so each subscriber receives at their own local time.
+  /// Governs *when* this person is sent to: the scheduler evaluates `sendTime` (falling back to
+  /// `ScheduleStream.sendTime` when unset) against this zone, so each subscriber receives at
+  /// their own local time.
   timezone    String   @default("Africa/Cairo")
-  /// Reserved for a future per-user language phase. It does **not** affect rendering today:
-  /// content rotation is shared, so one cycle produces one render in the stream's locale.
+  /// Personal `HH:mm` override of `ScheduleStream.sendTime`, set via `/settings time`. Null means
+  /// "use the stream's default" — the common case. Content selection is unaffected: it stays one
+  /// selection per stream per calendar date regardless of who is set to receive it when.
+  sendTime    String?
+  /// Which language `AYAH`/`HADITH` content renders in for this person — `'ar'` (default) or
+  /// `'en'`, set via `/settings language`. Content selection is unaffected: the same item is
+  /// picked once per stream per cycle; this only picks which pre-rendered variant a given
+  /// subscriber's delivery sends (`DeliveryRun.renderedTextEn`/`renderedBlocksEn`). Other content
+  /// types have no localized variant and always render in Arabic regardless of this value.
   locale      String   @default("ar")
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
@@ -122,7 +133,11 @@ model ScheduleStream {
   /// It does **not** decide when anyone is sent to — `UserSubscriber.timezone` does.
   timezone    String
   daysOfWeek  Int[]
-  /// Content selection filters on this locale (PLAN.md §5.14 rule 4) and the cycle renders in it.
+  /// Content selection filters on this locale (PLAN.md §5.14 rule 4), and it is the *canonical*
+  /// render every cycle always produces (`DeliveryRun.renderedText`/`renderedBlocks`). A
+  /// subscriber whose own `locale` differs (currently only `'ar'`/`'en'` are supported) instead
+  /// receives the matching localized variant when one was rendered — see
+  /// `UserSubscriber.locale` and `DeliveryRun.renderedTextEn`/`renderedBlocksEn`.
   locale               String            @default("ar")
   allowedContentTypes  ContentType[]
   selectionStrategy    SelectionStrategy @default(LEAST_RECENTLY_SENT)
@@ -208,10 +223,14 @@ model ContentSource {
 /// out to every active subscriber as `ContentDelivery` children.
 ///
 /// The cycle is keyed by *calendar date*, not by absolute time. Because each subscriber is sent
-/// to at their own local `sendTime`, one `deliveryLocalDate` can span roughly 49 hours of real
-/// time across UTC+14 to UTC-11. Everyone who reaches that date receives the same content: the
-/// first subscriber to cross `sendTime` creates the run and picks the content, and every later
-/// subscriber on the same date reuses it.
+/// to at their own local `sendTime` (subscriber override, else the stream's), one
+/// `deliveryLocalDate` can span roughly 49 hours of real time across UTC+14 to UTC-11. Everyone
+/// who reaches that date receives the same content: the first subscriber to cross `sendTime`
+/// creates the run and picks the content, and every later subscriber on the same date reuses it.
+/// "The same content" means the same `ContentItem` — rendering is not fully shared: the cycle is
+/// rendered once per supported locale (`renderedText`/`renderedBlocks` for the stream's canonical
+/// locale, `renderedTextEn`/`renderedBlocksEn` for the other supported one), and each subscriber's
+/// delivery picks the variant matching their own `UserSubscriber.locale`.
 model DeliveryRun {
   id                String              @id @default(cuid())
   streamId          String
@@ -229,9 +248,19 @@ model DeliveryRun {
   skippedAt         DateTime?
   errorCode         String?
   /// Rendered once per cycle and reused for every subscriber and every retry, so a retry
-  /// resends exactly what was originally sent rather than re-rendering mutable content.
+  /// resends exactly what was originally sent rather than re-rendering mutable content. This is
+  /// the canonical render, in the stream's own `locale` (see `ScheduleStream.locale`).
   renderedText      String?
   renderedBlocks    Json?
+  /// The other supported locale's render of the same `ContentItem` (currently `'ar'`/`'en'` are
+  /// the only two), used by subscribers whose own `locale` doesn't match the stream's. Null when
+  /// the content type has no localized variant (e.g. `COMPANION_STORY`, `BLESSING_REMINDER`) or
+  /// for rows created before this column existed — `sendDelivery` falls back to `renderedText`/
+  /// `renderedBlocks` in either case.
+  renderedTextEn    String?
+  renderedBlocksEn  Json?
+  /// Structural version only, shared by both locale variants: same renderer, same block
+  /// structure rules, just a different `locale` argument.
   rendererVersion   String?
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt

@@ -1,56 +1,190 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Privacy Policy - Daily Aya & Hadith</title>
     <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-50 min-h-screen p-6 md:p-12 text-gray-800">
-    <div class="max-w-3xl mx-auto bg-white rounded-2xl shadow-sm p-8 md:p-12">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <script>
+      const savedLang = localStorage.getItem('preferred_lang') || 'ar';
+      document.documentElement.setAttribute('data-active-lang', savedLang);
+      document.documentElement.lang = savedLang;
+      document.documentElement.dir = savedLang === 'ar' ? 'rtl' : 'ltr';
+
+      function setLanguage(lang) {
+        localStorage.setItem('preferred_lang', lang);
+        document.documentElement.setAttribute('data-active-lang', lang);
+        document.documentElement.lang = lang;
+        document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+      }
+    </script>
+    <style>
+      [data-active-lang='en'] [data-lang='ar'] {
+        display: none !important;
+      }
+      [data-active-lang='ar'] [data-lang='en'] {
+        display: none !important;
+      }
+      [data-lang='ar'] {
+        font-family: 'IBM Plex Sans Arabic', sans-serif;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-50 min-h-screen p-6 md:p-12 text-gray-800 relative">
+    <!-- Language Toggle -->
+    <div
+      class="absolute top-4 right-4 flex gap-2 text-gray-600 bg-white px-3 py-1 rounded-full shadow-sm"
+      dir="ltr"
+      style="left: auto; right: 1rem"
+    >
+      <button
+        onclick="setLanguage('en')"
+        class="text-sm font-medium hover:text-emerald-600 focus:outline-none"
+      >
+        English
+      </button>
+      <span class="text-gray-300">|</span>
+      <button
+        onclick="setLanguage('ar')"
+        class="text-sm font-medium hover:text-emerald-600 focus:outline-none"
+      >
+        العربية
+      </button>
+    </div>
+
+    <div class="max-w-3xl mx-auto bg-white rounded-2xl shadow-sm p-8 md:p-12 mt-8">
+      <!-- English Content -->
+      <div data-lang="en">
         <h1 class="text-3xl font-extrabold text-gray-900 mb-6">Privacy Policy</h1>
         <p class="text-gray-500 mb-8">Last Updated: August 14, 2026</p>
 
         <div class="space-y-8 text-lg leading-relaxed">
-            <section>
-                <h2 class="text-2xl font-bold text-gray-900 mb-3">1. Information We Collect</h2>
-                <p>When you install the Daily Aya & Hadith app in your Slack workspace, we collect the following minimal information required for the app to function:</p>
-                <ul class="list-disc pl-6 mt-3 space-y-2 text-gray-600">
-                    <li>Your Slack Workspace ID and Workspace Name.</li>
-                    <li>OAuth authentication tokens to send messages on your behalf.</li>
-                    <li>Channel IDs where the bot is invited and configured to send messages.</li>
-                    <li>Basic user IDs of users who interact with the bot (e.g., via slash commands).</li>
-                </ul>
-            </section>
+          <section>
+            <h2 class="text-2xl font-bold text-gray-900 mb-3">1. Information We Collect</h2>
+            <p>
+              When you install the Daily Aya & Hadith app in your Slack workspace, we collect the
+              following minimal information required for the app to function:
+            </p>
+            <ul class="list-disc pl-6 mt-3 space-y-2 text-gray-600">
+              <li>Your Slack Workspace ID and Workspace Name.</li>
+              <li>OAuth authentication tokens to send messages on your behalf.</li>
+              <li>Channel IDs where the bot is invited and configured to send messages.</li>
+              <li>Basic user IDs of users who interact with the bot (e.g., via slash commands).</li>
+            </ul>
+          </section>
 
-            <section>
-                <h2 class="text-2xl font-bold text-gray-900 mb-3">2. How We Use Your Information</h2>
-                <p>The information we collect is strictly used to:</p>
-                <ul class="list-disc pl-6 mt-3 space-y-2 text-gray-600">
-                    <li>Deliver the daily scheduled Aya and Hadith to your chosen channels.</li>
-                    <li>Respond to your slash commands and interactions.</li>
-                    <li>Maintain and improve the stability of the application.</li>
-                </ul>
-                <p class="mt-3 font-semibold text-emerald-600">We do not sell, rent, or share your data with any third parties.</p>
-            </section>
+          <section>
+            <h2 class="text-2xl font-bold text-gray-900 mb-3">2. How We Use Your Information</h2>
+            <p>The information we collect is strictly used to:</p>
+            <ul class="list-disc pl-6 mt-3 space-y-2 text-gray-600">
+              <li>Deliver the daily scheduled Aya and Hadith to your chosen channels.</li>
+              <li>Respond to your slash commands and interactions.</li>
+              <li>Maintain and improve the stability of the application.</li>
+            </ul>
+            <p class="mt-3 font-semibold text-emerald-600">
+              We do not sell, rent, or share your data with any third parties.
+            </p>
+          </section>
 
-            <section>
-                <h2 class="text-2xl font-bold text-gray-900 mb-3">3. Data Retention and Deletion</h2>
-                <p>We retain your workspace configuration and tokens as long as the app is installed. If you wish to delete your data, you can simply uninstall the app from your Slack workspace. We will periodically purge data associated with uninstalled workspaces.</p>
-            </section>
+          <section>
+            <h2 class="text-2xl font-bold text-gray-900 mb-3">3. Data Retention and Deletion</h2>
+            <p>
+              We retain your workspace configuration and tokens as long as the app is installed. If
+              you wish to delete your data, you can simply uninstall the app from your Slack
+              workspace. We will periodically purge data associated with uninstalled workspaces.
+            </p>
+          </section>
 
-            <section>
-                <h2 class="text-2xl font-bold text-gray-900 mb-3">4. Contact Us</h2>
-                <p>If you have any questions about this Privacy Policy, please contact us at:</p>
-                <a href="mailto:support@yourdomain.com" class="text-emerald-600 font-medium hover:underline mt-2 inline-block">support@yourdomain.com</a>
-            </section>
+          <section>
+            <h2 class="text-2xl font-bold text-gray-900 mb-3">4. Contact Us</h2>
+            <p>If you have any questions about this Privacy Policy, please contact us at:</p>
+            <a
+              href="mailto:safwat.rashwan@gmail.com"
+              class="text-emerald-600 font-medium hover:underline mt-2 inline-block"
+              dir="ltr"
+              >safwat.rashwan@gmail.com</a
+            >
+          </section>
         </div>
+      </div>
 
-        <div class="mt-12 pt-6 border-t border-gray-100">
-            <a href="/static/install.html" class="text-emerald-600 hover:text-emerald-700 font-medium flex items-center gap-2">
-                &larr; Back to Installation
-            </a>
+      <!-- Arabic Content -->
+      <div data-lang="ar">
+        <h1 class="text-3xl font-extrabold text-gray-900 mb-6">سياسة الخصوصية</h1>
+        <p class="text-gray-500 mb-8">آخر تحديث: ١٤ أغسطس ٢٠٢٦</p>
+
+        <div class="space-y-8 text-lg leading-relaxed">
+          <section>
+            <h2 class="text-2xl font-bold text-gray-900 mb-3">١. المعلومات التي نجمعها</h2>
+            <p>
+              عند تثبيت تطبيق "آية وحديث كل يوم" في مساحة عمل سلاك الخاصة بك، نقوم بجمع الحد الأدنى
+              من المعلومات اللازمة لعمل التطبيق:
+            </p>
+            <ul class="list-disc pr-6 mt-3 space-y-2 text-gray-600">
+              <li>معرف مساحة عمل سلاك واسم مساحة العمل.</li>
+              <li>رموز المصادقة (OAuth) لإرسال الرسائل نيابة عنك.</li>
+              <li>معرفات القنوات التي تمت دعوة الروبوت إليها وإعدادها لإرسال الرسائل.</li>
+              <li>
+                معرفات المستخدمين الأساسية للأشخاص الذين يتفاعلون مع الروبوت (مثل استخدام الأوامر).
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2 class="text-2xl font-bold text-gray-900 mb-3">٢. كيف نستخدم معلوماتك</h2>
+            <p>تُستخدم المعلومات التي نجمعها بشكل صارم في الأغراض التالية:</p>
+            <ul class="list-disc pr-6 mt-3 space-y-2 text-gray-600">
+              <li>توصيل الآية والحديث اليومي إلى القنوات التي اخترتها.</li>
+              <li>الرد على الأوامر والتفاعلات الخاصة بك.</li>
+              <li>الحفاظ على استقرار التطبيق وتحسينه.</li>
+            </ul>
+            <p class="mt-3 font-semibold text-emerald-600">
+              نحن لا نبيع أو نؤجر أو نشارك بياناتك مع أي أطراف ثالثة.
+            </p>
+          </section>
+
+          <section>
+            <h2 class="text-2xl font-bold text-gray-900 mb-3">٣. الاحتفاظ بالبيانات وحذفها</h2>
+            <p>
+              نحتفظ بإعدادات مساحة العمل ورموز المصادقة طالما أن التطبيق مثبت. إذا كنت ترغب في حذف
+              بياناتك، يمكنك ببساطة إلغاء تثبيت التطبيق من مساحة عمل سلاك الخاصة بك. نقوم دورياً
+              بمسح البيانات المرتبطة بمساحات العمل التي ألغيت تثبيتها.
+            </p>
+          </section>
+
+          <section>
+            <h2 class="text-2xl font-bold text-gray-900 mb-3">٤. اتصل بنا</h2>
+            <p>إذا كان لديك أي أسئلة حول سياسة الخصوصية هذه، يرجى التواصل معنا عبر:</p>
+            <a
+              href="mailto:safwat.rashwan@gmail.com"
+              class="text-emerald-600 font-medium hover:underline mt-2 inline-block"
+              dir="ltr"
+              >safwat.rashwan@gmail.com</a
+            >
+          </section>
         </div>
+      </div>
+
+      <div class="mt-12 pt-6 border-t border-gray-100 flex justify-between items-center">
+        <a
+          href="/static/install.html"
+          class="text-emerald-600 hover:text-emerald-700 font-medium flex items-center gap-2"
+        >
+          <span data-lang="en">&larr; Back to Installation</span>
+          <span data-lang="ar">&rarr; العودة للرئيسية</span>
+        </a>
+        <a href="/static/tos.html" class="text-gray-500 hover:text-emerald-600 text-sm">
+          <span data-lang="en">Terms of Service</span>
+          <span data-lang="ar">شروط الخدمة</span>
+        </a>
+      </div>
     </div>
-</body>
+  </body>
 </html>

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ContentStatus, SelectionStrategy } from '../generated/prisma/enums';
+import { ContentStatus, ContentType, SelectionStrategy } from '../generated/prisma/enums';
 import type { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import type { StreamRecord } from '../streams/streams.service';
@@ -46,6 +46,25 @@ export class ContentSelectionService {
   /** Read-only preview used by `GET /streams/:id/next-content`. Creates and reserves nothing. */
   async preview(stream: StreamRecord): Promise<SelectableContent | null> {
     return this.select(this.prisma, stream);
+  }
+
+  /**
+   * Uniform-random pick for the instant `/aya`/`/hadith` commands: not scoped to any stream, not
+   * filtered by locale (display language is a rendering choice — see `RenderContext.locale` —
+   * not a content-pool filter), and not tracked in `DeliveryRun`'s least-recently-sent
+   * bookkeeping, since an on-demand fetch is deliberately outside every stream's rotation.
+   */
+  async selectRandomByType(type: ContentType): Promise<SelectableContent | null> {
+    const eligible = await this.prisma.contentItem.findMany({
+      where: { status: ContentStatus.APPROVED, type },
+      include: { sources: true },
+    });
+
+    if (eligible.length === 0) {
+      return null;
+    }
+
+    return eligible[Math.floor(Math.random() * eligible.length)];
   }
 
   private async lastSentAtByContentId(

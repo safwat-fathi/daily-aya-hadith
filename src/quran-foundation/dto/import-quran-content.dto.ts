@@ -10,7 +10,7 @@ import {
   MinLength,
 } from 'class-validator';
 
-const MAX_BATCH_SIZE = 20;
+const MAX_BATCH_SIZE = 100;
 
 export class ImportQuranContentDto {
   @ApiPropertyOptional({ minimum: 1, maximum: MAX_BATCH_SIZE, default: 1 })

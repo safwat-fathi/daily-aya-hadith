@@ -20,6 +20,10 @@ export interface AppEnvironment {
   SCHEDULER_ENABLED: boolean;
   SCHEDULER_INTERVAL_MINUTES: number;
   SCHEDULER_LOCK_ID: number;
+  WORKSPACE_PURGE_ENABLED: boolean;
+  WORKSPACE_PURGE_INTERVAL_MINUTES: number;
+  WORKSPACE_PURGE_GRACE_DAYS: number;
+  WORKSPACE_PURGE_LOCK_ID: number;
   QURAN_FOUNDATION_ENV: 'prelive' | 'production';
   QURAN_FOUNDATION_CLIENT_ID?: string;
   QURAN_FOUNDATION_CLIENT_SECRET?: string;
@@ -72,6 +76,15 @@ const environmentSchema = Joi.object<AppEnvironment>({
   SCHEDULER_ENABLED: Joi.boolean().truthy('true').falsy('false').default(false),
   SCHEDULER_INTERVAL_MINUTES: Joi.number().integer().min(1).max(60).default(5),
   SCHEDULER_LOCK_ID: Joi.number().integer().min(1).default(874321),
+  // Hard-deletes a SlackWorkspace (cascading its subscribers/streams/deliveries) once it has
+  // been uninstalled (SlackWorkspace.uninstalledAt) for WORKSPACE_PURGE_GRACE_DAYS. Fulfills the
+  // privacy policy's "we will periodically purge data associated with uninstalled workspaces".
+  // Enabled by default, unlike SCHEDULER_ENABLED, since this is a standing compliance promise
+  // rather than an opt-in delivery feature.
+  WORKSPACE_PURGE_ENABLED: Joi.boolean().truthy('true').falsy('false').default(true),
+  WORKSPACE_PURGE_INTERVAL_MINUTES: Joi.number().integer().min(1).default(1440),
+  WORKSPACE_PURGE_GRACE_DAYS: Joi.number().integer().min(1).default(30),
+  WORKSPACE_PURGE_LOCK_ID: Joi.number().integer().min(1).default(874322),
   // All optional: leave blank and the app still boots, with the import endpoint returning 503
   // QURAN_FOUNDATION_NOT_CONFIGURED, same graceful-degradation pattern as the Slack vars above.
   // Never call the runtime scheduler/delivery path with this client (PLAN.md §2.1) — import only.

@@ -19,7 +19,7 @@ export class ContentPreviewResponseDto {
   @ApiProperty({ enum: ContentStatus, enumName: 'ContentStatus' })
   status!: ContentStatus;
 
-  @ApiProperty({ example: 'ayah-v1' })
+  @ApiProperty({ example: 'ayah-v2' })
   rendererVersion!: string;
 
   @ApiProperty({ description: 'Plain-text notification fallback.' })

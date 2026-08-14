@@ -2,8 +2,9 @@ import type { Prisma } from '../generated/prisma/client';
 
 /**
  * Everything `DeliveryOrchestratorService.sendDelivery` needs in one row: the run for its
- * snapshot (`renderedText`/`renderedBlocks`) and stream (`workspaceId`, `maxAutomaticAttempts`),
- * and the subscriber for their Slack user ID.
+ * snapshots (`renderedText`/`renderedBlocks`, and the `'en'` counterparts `renderedTextEn`/
+ * `renderedBlocksEn`) and stream (`workspaceId`, `maxAutomaticAttempts`), and the subscriber for
+ * their Slack user ID and `locale` (which snapshot they get).
  */
 export const deliveryWithContextArgs = {
   include: {

@@ -18,6 +18,7 @@ import { SubscribersModule } from './subscribers/subscribers.module';
 import { SlackEventsModule } from './slack-events/slack-events.module';
 import { SlackOauthModule } from './slack-oauth/slack-oauth.module';
 import { WorkspacesModule } from './workspaces/workspaces.module';
+import { WorkspacePurgeModule } from './workspace-purge/workspace-purge.module';
 import { StreamsModule } from './streams/streams.module';
 
 @Module({
@@ -38,6 +39,7 @@ import { StreamsModule } from './streams/streams.module';
     StreamsModule,
     DeliveriesModule,
     SchedulerModule,
+    WorkspacePurgeModule,
     AdminUiModule,
   ],
   providers: [

@@ -419,6 +419,26 @@ Preferred MVP behavior:
 
 This keeps secrets out of normal database exports.
 
+### 5.10.1 Data retention and purge after uninstall
+
+When Slack fires `app_uninstalled`, `SlackEventsService.onAppUninstalled` immediately
+deactivates the workspace (`isActive = false`), wipes `botTokenCiphertext`, and stamps
+`uninstalledAt`. The workspace row and everything under it (subscribers, streams, delivery
+history) is retained at that point — not yet deleted.
+
+`WorkspacePurgeService` (`src/workspace-purge/`) runs a periodic sweep (default: daily,
+`WORKSPACE_PURGE_INTERVAL_MINUTES`) that hard-deletes any `SlackWorkspace` whose
+`uninstalledAt` is older than `WORKSPACE_PURGE_GRACE_DAYS` (default: 30). The delete cascades
+at the database level to every `UserSubscriber`, `ScheduleStream`, `DeliveryRun`, and
+`ContentDelivery` row for that workspace. A `WORKSPACE_PURGED` audit event is recorded first,
+in the same transaction, so the audit trail survives (`AuditEvent.workspaceId` is set null by
+the cascade rather than the row being deleted). The grace period exists so a stray/duplicate
+uninstall event or a fast reinstall doesn't cause immediate, unrecoverable data loss.
+
+This is what fulfills the privacy policy's "we will periodically purge data associated with
+uninstalled workspaces." The job is guarded by the same Postgres-advisory-lock pattern as
+`SchedulerService` (`SchedulerLockService`), so a sweep cannot overlap itself across processes.
+
 ## 5.11 User subscriber
 
 A user subscriber links a Slack workspace to a Slack user ID who opted in.

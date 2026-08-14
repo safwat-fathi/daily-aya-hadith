@@ -27,7 +27,7 @@
     <div class="toolbar-actions">
       <button type="submit" class="btn primary">Filter</button>
       <% if (selectedLanguage) { %>
-        <a href="/api/v1/admin/quran-import" class="btn">Clear</a>
+        <a href="/api/v1/admin/quran-import?language=" class="btn">Clear</a>
       <% } %>
     </div>
   </form>
@@ -38,6 +38,9 @@
     <div class="field">
       <label for="translationResourceId">Translation</label>
       <select id="translationResourceId" name="translationResourceId">
+        <!-- Relies on being the first option: when defaults.translationResourceId is '' (no
+             real resource id ever matches ''), no option gets an explicit `selected`, so the
+             browser falls back to whichever option is first in the DOM. -->
         <option value="">(none)</option>
         <% translations.forEach(function (t) { %>
           <option value="<%= t.id %>" <%= t.id === defaults.translationResourceId ? 'selected' : '' %>>
@@ -77,7 +80,8 @@
 
   <div class="field">
     <label for="count">How many verses</label>
-    <input type="number" id="count" name="count" min="1" max="20" value="1" />
+    <input type="number" id="count" name="count" min="1" max="100" value="1" />
+    <p class="hint">Larger batches take longer to import — the page will wait until it finishes. If the browser times out, verses already imported are safe; re-submitting continues from where it left off rather than retrying.</p>
   </div>
 
   <button type="submit" class="primary">Import</button>
