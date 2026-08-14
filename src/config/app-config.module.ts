@@ -8,7 +8,7 @@ import { type AppEnvironment, validateEnvironment } from './env.validation';
 @Module({
   imports: [
     ConfigModule.forRoot({
-      envFilePath: process.env.NODE_ENV === 'production' ? '.env.production' : '.env',
+      envFilePath: ['.env.production', '.env'],
       cache: true,
       isGlobal: true,
       validate: validateEnvironment,
