@@ -8,6 +8,7 @@ import { AppConfigModule } from './config/app-config.module';
 import { AuditModule } from './audit/audit.module';
 import { ContentModule } from './content/content.module';
 import { DeliveriesModule } from './deliveries/deliveries.module';
+import { HadithApiModule } from './hadith-api/hadith-api.module';
 import { HealthModule } from './health/health.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { QuranFoundationModule } from './quran-foundation/quran-foundation.module';
@@ -30,6 +31,7 @@ import { StreamsModule } from './streams/streams.module';
     AuditModule,
     ContentModule,
     QuranFoundationModule,
+    HadithApiModule,
     ReviewModule,
     SlackModule,
     WorkspacesModule,

@@ -322,6 +322,21 @@ model QuranImportCursor {
   updatedAt       DateTime @updatedAt
 }
 
+/// Tracks how far the hadithapi.com import (src/hadith-api/) has advanced through the
+/// book x status x page x item walk. Single row, keyed by a fixed id. bookIndex/statusIndex
+/// index into the fixed BOOK_SLUGS/HADITH_STATUSES arrays in hadith-collections.ts; page/
+/// itemIndex are the NEXT position to fetch, not the last one processed — unlike
+/// QuranImportCursor, whose walk is a pure function of static data, this walk depends on live
+/// pagination metadata, so the cursor stores the target position directly.
+model HadithImportCursor {
+  id          String   @id @default("singleton")
+  bookIndex   Int      @default(0)
+  statusIndex Int      @default(0)
+  page        Int      @default(1)
+  itemIndex   Int      @default(0)
+  updatedAt   DateTime @updatedAt
+}
+
 model AuditEvent {
   id          String   @id @default(cuid())
   workspaceId String?

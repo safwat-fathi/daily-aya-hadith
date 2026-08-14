@@ -1,0 +1,27 @@
+<%- include('../_layout/_header', { title, activeNav, flash }) %>
+
+<div class="page-header">
+  <h1>Import from hadithapi.com</h1>
+</div>
+
+<div class="card">
+  <% if (next) { %>
+    <p>Next up: <strong><%= next.collectionArabic %></strong> (<%= next.collectionEnglish %>) — <%= next.status %>, page <%= next.page %>, item <%= next.itemIndex + 1 %></p>
+    <p class="hint">The exact hadith at this position isn't known until import runs — an empty or 404 combo at this position is skipped forward automatically.</p>
+  <% } else { %>
+    <p class="muted">Could not determine the next position — check that HADITH_API_KEY is configured.</p>
+  <% } %>
+  <p class="hint">Imports only Sahih and Hasan graded hadiths, cycling through all collections, skipping any hadith with no English text. Imported items are draft Hadith content and still need to be reviewed and approved before they can be delivered — nothing here sends anything or bypasses review (PLAN.md §2.1).</p>
+</div>
+
+<form method="POST" action="/api/v1/admin/hadith-import" class="card">
+  <div class="field">
+    <label for="count">How many hadiths</label>
+    <input type="number" id="count" name="count" min="1" max="100" value="1" />
+    <p class="hint">Larger batches take longer to import — the page will wait until it finishes. If the browser times out, hadiths already imported are safe; re-submitting continues from where it left off rather than retrying.</p>
+  </div>
+
+  <button type="submit" class="primary">Import</button>
+</form>
+
+<%- include('../_layout/_footer') %>
