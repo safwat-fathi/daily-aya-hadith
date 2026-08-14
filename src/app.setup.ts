@@ -1,14 +1,15 @@
-import {
-  BadRequestException,
-  INestApplication,
-  RequestMethod,
-  ValidationPipe,
-} from '@nestjs/common';
+import { BadRequestException, RequestMethod, ValidationPipe } from '@nestjs/common';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Logger } from 'nestjs-pino';
 import { flattenValidationErrors } from './common/utils/validation-errors';
 
-export function configureApplication(app: INestApplication): void {
+export function configureApplication(app: NestExpressApplication): void {
   app.useLogger(app.get(Logger));
+  // Required for express-session's cookie.secure (admin-ui.setup.ts) to work behind a reverse
+  // proxy — without any trust proxy setting, Express ignores X-Forwarded-Proto and treats every
+  // request as insecure, so the Set-Cookie header is silently dropped. Any value >= 1 fixes that;
+  // 2 (Cloudflare -> Nginx -> Node) is chosen for accurate req.ip resolution too.
+  app.set('trust proxy', 2);
   // The admin dashboard's HTML forms post `application/x-www-form-urlencoded` bodies using
   // bracket notation (`payload[arabicText]`, `sources[0][title]`) to build nested objects/arrays
   // that match the existing DTOs. This depends on `qs`'s `extended: true` parsing, which is

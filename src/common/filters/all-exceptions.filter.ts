@@ -102,6 +102,19 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const http = host.switchToHttp();
     const request = http.getRequest<Request>();
     const response = http.getResponse<Response>();
+
+    // Some handlers (e.g. AdminUiSessionGuard) write directly to the response — a redirect for
+    // an unauthenticated browser request — and then also signal failure to Nest, which reaches
+    // this filter a second time for the same request. That's expected, not an error: writing to
+    // the response again here would crash the process with ERR_HTTP_HEADERS_SENT.
+    if (response.headersSent) {
+      this.logger.debug(
+        { method: request.method, url: request.originalUrl },
+        'Response already sent; skipping error write',
+      );
+      return;
+    }
+
     const prismaError = mapPrismaError(exception);
     const statusCode =
       exception instanceof HttpException

@@ -309,3 +309,15 @@ model AuditEvent {
   @@index([entityType, entityId])
   @@index([actorId, createdAt])
 }
+
+/// Backs express-session's connect-pg-simple store (admin-ui.setup.ts) for the admin dashboard.
+/// Schema matches connect-pg-simple's own table.sql exactly, since it queries this table
+/// directly by name/column rather than through Prisma.
+model Session {
+  sid    String   @id @db.VarChar
+  sess   Json     @db.Json
+  expire DateTime @db.Timestamp(6)
+
+  @@index([expire], map: "IDX_session_expire")
+  @@map("session")
+}

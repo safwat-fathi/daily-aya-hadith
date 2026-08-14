@@ -1,10 +1,13 @@
 import { join } from 'node:path';
 import { ConfigService } from '@nestjs/config';
 import type { NestExpressApplication } from '@nestjs/platform-express';
+import connectPgSimple from 'connect-pg-simple';
 import session from 'express-session';
+import { Pool } from 'pg';
 import type { AppEnvironment } from '../config/env.validation';
 
 const SESSION_MAX_AGE_MS = 8 * 60 * 60 * 1000;
+const PgSession = connectPgSimple(session);
 
 /**
  * View engine, static assets, and session middleware for the admin dashboard. Paths are resolved
@@ -20,8 +23,15 @@ export function configureAdminUiViews(app: NestExpressApplication): void {
   app.setViewEngine('ejs');
   app.useStaticAssets(join(process.cwd(), 'public'), { prefix: '/static' });
 
+  // Dedicated pool, separate from Prisma's own connection to the same database (prisma.service.ts)
+  // — connect-pg-simple manages its own lifecycle and issues raw SQL against the `session` table
+  // (prisma/schema.prisma's `Session` model, migrated like any other table) rather than going
+  // through Prisma.
+  const pool = new Pool({ connectionString: config.get('DATABASE_URL', { infer: true }) });
+
   app.use(
     session({
+      store: new PgSession({ pool, tableName: 'session', createTableIfMissing: false }),
       secret: config.get('SESSION_SECRET', { infer: true }),
       resave: false,
       saveUninitialized: false,
