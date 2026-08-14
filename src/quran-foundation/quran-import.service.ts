@@ -162,10 +162,18 @@ export class QuranImportService {
           .map((word) => ({ word: word.arabicText, meaning: word.translation }))
       : undefined;
 
+    const referenceTitle =
+      formatQuranReference({
+        surahNumber,
+        surahNameArabic: surahName.arabic,
+        surahNameEnglish: surahName.english,
+        ayahNumber,
+      }) ?? `${surahNumber}:${ayahNumber}`;
+
     const dto: CreateContentDto = {
       type: ContentType.AYAH,
       locale: 'ar',
-      title: null,
+      title: referenceTitle,
       payload: {
         arabicText: verse.arabicText,
         surahNumber,
@@ -185,13 +193,7 @@ export class QuranImportService {
           // citation reads identically to a hand-entered one. `url` is kept (unlike the manual
           // form, which blanks it) — the import already has the exact address for free, and
           // SlackMessageBuilder.citation() renders it as a clickable link.
-          title:
-            formatQuranReference({
-              surahNumber,
-              surahNameArabic: surahName.arabic,
-              surahNameEnglish: surahName.english,
-              ayahNumber,
-            }) ?? `${surahNumber}:${ayahNumber}`,
+          title: referenceTitle,
           surahNumber,
           surahNameArabic: surahName.arabic,
           surahNameEnglish: surahName.english,
