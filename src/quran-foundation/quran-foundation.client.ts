@@ -198,15 +198,29 @@ export class QuranFoundationClient {
       params.set('translations', translationId);
     }
 
-    if (hasText(tafsirId)) {
-      params.set('tafsirs', tafsirId);
-    }
-
-    const body = await this.request<RawVerseResponse>(
+    // tafsirs are no longer returned by the verses/by_key endpoint in API v4
+    // We must fetch them from their dedicated endpoint if requested.
+    const versePromise = this.request<RawVerseResponse>(
       `/content/api/v4/verses/by_key/${surahNumber}:${ayahNumber}?${params.toString()}`,
     );
 
-    return parseVerse(body.verse, surahNumber, ayahNumber);
+    let tafsirPromise: Promise<{ tafsir?: { text?: string } }> = Promise.resolve({});
+    if (hasText(tafsirId)) {
+      tafsirPromise = this.request<{ tafsir?: { text?: string } }>(
+        `/content/api/v4/tafsirs/${tafsirId}/by_ayah/${surahNumber}:${ayahNumber}`
+      ).catch((err) => {
+        this.logger.warn(`Failed to fetch tafsir ${tafsirId} for ${surahNumber}:${ayahNumber}: ${err.message}`);
+        return {};
+      });
+    }
+
+    const [verseBody, tafsirBody] = await Promise.all([versePromise, tafsirPromise]);
+
+    const parsedVerse = parseVerse(verseBody.verse, surahNumber, ayahNumber);
+    if (tafsirBody.tafsir?.text) {
+      parsedVerse.tafsir = tafsirBody.tafsir.text;
+    }
+    return parsedVerse;
   }
 
   async listTranslations(): Promise<QuranFoundationResource[]> {

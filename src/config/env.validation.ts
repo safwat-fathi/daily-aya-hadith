@@ -29,6 +29,7 @@ export interface AppEnvironment {
   QURAN_FOUNDATION_CLIENT_SECRET?: string;
   QURAN_FOUNDATION_TRANSLATION_RESOURCE_ID?: string;
   QURAN_FOUNDATION_TAFSIR_RESOURCE_ID?: string;
+  HADITH_API_KEY?: string;
   CLOCK_OFFSET_SECONDS: number;
   SWAGGER_ENABLED: boolean;
 }
@@ -97,6 +98,7 @@ const environmentSchema = Joi.object<AppEnvironment>({
   QURAN_FOUNDATION_CLIENT_SECRET: Joi.string().allow('').optional(),
   QURAN_FOUNDATION_TRANSLATION_RESOURCE_ID: Joi.string().allow('').optional(),
   QURAN_FOUNDATION_TAFSIR_RESOURCE_ID: Joi.string().allow('').optional(),
+  HADITH_API_KEY: Joi.string().allow('').optional(),
   // Shifts every scheduling decision, so production must never run with it set. Enforced here
   // rather than in the clock itself: a startup failure cannot be missed, a runtime check can.
   CLOCK_OFFSET_SECONDS: Joi.number()

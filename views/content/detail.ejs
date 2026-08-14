@@ -46,22 +46,17 @@
   </div>
 
   <% if (content.status === 'IN_REVIEW') { %>
-    <div class="actions" style="margin-top: 1rem; align-items: start;">
-      <form method="POST" action="/api/v1/admin/content/<%= content.id %>/approve">
-        <div class="field">
-          <label>Reviewer note (optional)</label>
-          <textarea name="reviewNote"></textarea>
-        </div>
-        <button type="submit" class="primary">Approve</button>
-      </form>
-      <form method="POST" action="/api/v1/admin/content/<%= content.id %>/reject">
-        <div class="field">
-          <label>Reviewer note (required)</label>
-          <textarea name="reviewNote" required></textarea>
-        </div>
-        <button type="submit" class="danger">Reject</button>
-      </form>
-    </div>
+    <form method="POST" style="margin-top: 1.5rem;">
+      <div class="field" style="max-width: 640px;">
+        <label for="reviewNote">Reviewer note</label>
+        <div class="hint">Optional for approval, required for rejection.</div>
+        <textarea name="reviewNote" id="reviewNote" rows="3"></textarea>
+      </div>
+      <div class="actions" style="margin-top: 0.75rem;">
+        <button type="submit" class="primary" formaction="/api/v1/admin/content/<%= content.id %>/approve">Approve</button>
+        <button type="submit" class="danger" formaction="/api/v1/admin/content/<%= content.id %>/reject">Reject</button>
+      </div>
+    </form>
   <% } %>
 </div>
 
