@@ -60,7 +60,7 @@ const DEFAULT_SUBSCRIBER_LOCALE = 'ar';
 
 const SETTINGS_HINT_LINES = [
   'To change your settings:',
-  '• `/settings time HH:mm` — set your personal send time, e.g. `/settings time 07:30`',
+  '• `/settings time HH:mm` — set your personal send time in 24-hour format, e.g. `/settings time 14:30`',
   "• `/settings time default` — clear your custom send time and use each stream's own default",
   '• `/settings timezone <IANA zone>` — set your timezone, e.g. `/settings timezone Europe/London`',
   '• `/settings language ar` or `/settings language en` — set your content language',
@@ -459,7 +459,7 @@ export class SlackEventsService implements OnModuleInit, OnModuleDestroy {
       await this.reply(
         workspaceId,
         slackUserId,
-        "That doesn't look like a valid time. Use 24-hour HH:mm, e.g. `/settings time 07:30`.",
+        "That doesn't look like a valid time. Use 24-hour HH:mm, e.g. `/settings time 14:30`.",
       );
       return;
     }
