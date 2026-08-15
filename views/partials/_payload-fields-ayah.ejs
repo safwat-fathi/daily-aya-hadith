@@ -26,6 +26,10 @@
   <label for="conciseTafsir">Concise tafsir</label>
   <textarea id="conciseTafsir" name="payload[conciseTafsir]"><%= payload.conciseTafsir || '' %></textarea>
 </div>
+<div class="field">
+  <label for="tafsirResourceName">Tafsir Resource Name (e.g., السعدي, الميسر)</label>
+  <input type="text" id="tafsirResourceName" name="payload[tafsirResourceName]" value="<%= payload.tafsirResourceName || '' %>" dir="rtl" />
+</div>
 
 <fieldset>
   <legend>Word meanings (optional, up to 3 shown)</legend>

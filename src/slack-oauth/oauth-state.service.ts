@@ -24,7 +24,13 @@ export class OauthStateService {
     const encoded = config.get('SLACK_TOKEN_ENCRYPTION_KEY', { infer: true });
     this.hmacKey = hasText(encoded)
       ? Buffer.from(
-          hkdfSync('sha256', Buffer.from(encoded, 'base64'), Buffer.alloc(0), HKDF_INFO, HMAC_KEY_BYTES),
+          hkdfSync(
+            'sha256',
+            Buffer.from(encoded, 'base64'),
+            Buffer.alloc(0),
+            HKDF_INFO,
+            HMAC_KEY_BYTES,
+          ),
         )
       : null;
   }

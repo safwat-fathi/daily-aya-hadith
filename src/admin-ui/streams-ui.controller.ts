@@ -2,11 +2,7 @@ import { Controller, Get, Param, Post, Query, Req, Res, UseGuards } from '@nestj
 import type { Request, Response } from 'express';
 import { Public } from '../common/decorators/public.decorator';
 import { RequestId } from '../common/decorators/request-id.decorator';
-import {
-  ContentType,
-  ScheduleFrequency,
-  SelectionStrategy,
-} from '../generated/prisma/enums';
+import { ContentType, ScheduleFrequency, SelectionStrategy } from '../generated/prisma/enums';
 import { CreateStreamDto, ListStreamsQueryDto, UpdateStreamDto } from '../streams/dto/stream.dto';
 import { StreamsService } from '../streams/streams.service';
 import { WorkspacesService } from '../workspaces/workspaces.service';
@@ -89,7 +85,9 @@ export class StreamsUiController {
       locale: str(body.locale) ?? 'ar',
       allowedContentTypes: toArray(body.allowedContentTypes),
       selectionStrategy: str(body.selectionStrategy),
-      maxAutomaticAttempts: body.maxAutomaticAttempts ? Number(body.maxAutomaticAttempts) : undefined,
+      maxAutomaticAttempts: body.maxAutomaticAttempts
+        ? Number(body.maxAutomaticAttempts)
+        : undefined,
       actorId: ADMIN_UI_ACTOR,
     });
 
@@ -151,7 +149,9 @@ export class StreamsUiController {
       locale: str(body.locale),
       allowedContentTypes: toArray(body.allowedContentTypes),
       selectionStrategy: str(body.selectionStrategy),
-      maxAutomaticAttempts: body.maxAutomaticAttempts ? Number(body.maxAutomaticAttempts) : undefined,
+      maxAutomaticAttempts: body.maxAutomaticAttempts
+        ? Number(body.maxAutomaticAttempts)
+        : undefined,
       actorId: ADMIN_UI_ACTOR,
     });
 

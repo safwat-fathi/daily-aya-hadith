@@ -207,9 +207,11 @@ export class QuranFoundationClient {
     let tafsirPromise: Promise<{ tafsir?: { text?: string } }> = Promise.resolve({});
     if (hasText(tafsirId)) {
       tafsirPromise = this.request<{ tafsir?: { text?: string } }>(
-        `/content/api/v4/tafsirs/${tafsirId}/by_ayah/${surahNumber}:${ayahNumber}`
+        `/content/api/v4/tafsirs/${tafsirId}/by_ayah/${surahNumber}:${ayahNumber}`,
       ).catch((err) => {
-        this.logger.warn(`Failed to fetch tafsir ${tafsirId} for ${surahNumber}:${ayahNumber}: ${err.message}`);
+        this.logger.warn(
+          `Failed to fetch tafsir ${tafsirId} for ${surahNumber}:${ayahNumber}: ${err.message}`,
+        );
         return {};
       });
     }

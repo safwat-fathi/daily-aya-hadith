@@ -58,11 +58,7 @@ export class HadithImportService {
     private readonly contentService: ContentService,
   ) {}
 
-  async importNext(
-    count: number,
-    actorId: string,
-    requestId: string,
-  ): Promise<HadithImportResult> {
+  async importNext(count: number, actorId: string, requestId: string): Promise<HadithImportResult> {
     const result: HadithImportResult = {
       created: [],
       skippedDuplicates: [],

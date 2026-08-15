@@ -7,7 +7,11 @@ import type { Prisma } from '../generated/prisma/client';
 import { DeliveryStatus } from '../generated/prisma/enums';
 import { PrismaService } from '../prisma/prisma.service';
 import { DeliveryOrchestratorService } from './delivery-orchestrator.service';
-import { deliveryAlreadyResolved, deliveryNotFound, deliveryNotRetryable } from './deliveries.errors';
+import {
+  deliveryAlreadyResolved,
+  deliveryNotFound,
+  deliveryNotRetryable,
+} from './deliveries.errors';
 import { deliveryListArgs, type DeliveryListEntry } from './deliveries.select';
 import type { ListDeliveriesQueryDto } from './dto/list-deliveries-query.dto';
 import type { MarkSkippedDto } from './dto/mark-skipped.dto';
@@ -108,7 +112,11 @@ export class DeliveriesService {
   }
 
   /** Administrative escape hatch (PLAN.md §9.6), scoped to one subscriber's delivery. */
-  async markSkipped(id: string, dto: MarkSkippedDto, requestId: string): Promise<DeliveryListEntry> {
+  async markSkipped(
+    id: string,
+    dto: MarkSkippedDto,
+    requestId: string,
+  ): Promise<DeliveryListEntry> {
     await this.prisma.$transaction(async (transaction) => {
       const existing = await transaction.contentDelivery.findUnique({ where: { id } });
 

@@ -23,7 +23,9 @@ class FailedHadithDto {
   @ApiProperty()
   bookSlug!: string;
 
-  @ApiPropertyOptional({ description: 'Absent for a page-fetch-level failure with no single item to attach it to.' })
+  @ApiPropertyOptional({
+    description: 'Absent for a page-fetch-level failure with no single item to attach it to.',
+  })
   hadithNumber?: string;
 
   @ApiProperty()
@@ -36,7 +38,8 @@ export class HadithImportResponseDto {
 
   @ApiProperty({
     type: () => [SkippedHadithDto],
-    description: 'Hadiths skipped because a non-archived HADITH draft/approved item already exists for them.',
+    description:
+      'Hadiths skipped because a non-archived HADITH draft/approved item already exists for them.',
   })
   skippedDuplicates!: SkippedHadithDto[];
 

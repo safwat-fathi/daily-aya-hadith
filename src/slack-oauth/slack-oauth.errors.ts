@@ -51,7 +51,8 @@ export function oauthEnterpriseInstallUnsupported(): HttpException {
     {
       statusCode: HttpStatus.BAD_REQUEST,
       code: 'SLACK_OAUTH_ENTERPRISE_UNSUPPORTED',
-      message: 'Enterprise-wide installs are not supported yet. Install into a single workspace instead.',
+      message:
+        'Enterprise-wide installs are not supported yet. Install into a single workspace instead.',
     },
     HttpStatus.BAD_REQUEST,
   );

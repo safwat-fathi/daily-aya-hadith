@@ -206,7 +206,11 @@ export class ContentUiController {
     @RequestId() requestId: string,
   ): Promise<void> {
     await runAction(request, response, `${BASE}/${id}`, () =>
-      this.reviewService.submit(id, { actorId: ADMIN_UI_ACTOR } satisfies ActorActionDto, requestId),
+      this.reviewService.submit(
+        id,
+        { actorId: ADMIN_UI_ACTOR } satisfies ActorActionDto,
+        requestId,
+      ),
     );
   }
 
@@ -221,7 +225,10 @@ export class ContentUiController {
     await runAction(request, response, `${BASE}/${id}`, () =>
       this.reviewService.approve(
         id,
-        { reviewerId: ADMIN_UI_ACTOR, reviewNote: str(body.reviewNote) } satisfies ReviewDecisionDto,
+        {
+          reviewerId: ADMIN_UI_ACTOR,
+          reviewNote: str(body.reviewNote),
+        } satisfies ReviewDecisionDto,
         requestId,
       ),
     );
@@ -260,7 +267,11 @@ export class ContentUiController {
     @RequestId() requestId: string,
   ): Promise<void> {
     await runAction(request, response, `${BASE}/${id}`, () =>
-      this.contentService.archive(id, { actorId: ADMIN_UI_ACTOR } satisfies ActorActionDto, requestId),
+      this.contentService.archive(
+        id,
+        { actorId: ADMIN_UI_ACTOR } satisfies ActorActionDto,
+        requestId,
+      ),
     );
   }
 

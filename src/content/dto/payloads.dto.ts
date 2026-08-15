@@ -98,6 +98,12 @@ export class AyahPayloadDto {
   @MaxLength(LONG_TEXT_MAX_LENGTH)
   conciseTafsir?: string;
 
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(SHORT_TEXT_MAX_LENGTH)
+  tafsirResourceName?: string;
+
   @ApiPropertyOptional({ type: () => [WordMeaningDto] })
   @IsOptional()
   @IsArray()

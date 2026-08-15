@@ -16,6 +16,11 @@ import { ContentService } from './content.service';
     ContentChecksumService,
     ContentPreviewService,
   ],
-  exports: [ContentService, ContentValidationService, ContentChecksumService, ContentPreviewService],
+  exports: [
+    ContentService,
+    ContentValidationService,
+    ContentChecksumService,
+    ContentPreviewService,
+  ],
 })
 export class ContentModule {}

@@ -112,7 +112,7 @@ commands bypass all of this and send immediately, outside any stream's cycle.
   needed. Handles `/subscribe`, `/unsubscribe`, `/settings`, `/aya`, `/hadith`, plain-text DM
   `subscribe`/`unsubscribe`, and `app_uninstalled`. Skipped entirely (with a one-time warning) if
   `SLACK_APP_TOKEN` is unset — everything else keeps working.
-- **OAuth install** (`src/slack-oauth/`) — `/api/v1/slack/install` → Slack → 
+- **OAuth install** (`src/slack-oauth/`) — `/api/v1/slack/install` → Slack →
   `/api/v1/slack/oauth/callback` creates the `SlackWorkspace` row, encrypts the bot token
   (`TokenCipherService`, AES-256-GCM via `SLACK_TOKEN_ENCRYPTION_KEY`), and auto-provisions a
   default `DAILY`/`AYAH` stream. There is no env-var bot token — every workspace's token is

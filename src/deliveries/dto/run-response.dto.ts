@@ -1,5 +1,10 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ContentStatus, ContentType, DeliveryStatus, DeliveryTriggerType } from '../../generated/prisma/enums';
+import {
+  ContentStatus,
+  ContentType,
+  DeliveryStatus,
+  DeliveryTriggerType,
+} from '../../generated/prisma/enums';
 import { DeliveryResponseDto } from './delivery-response.dto';
 
 class RunContentSummaryDto {

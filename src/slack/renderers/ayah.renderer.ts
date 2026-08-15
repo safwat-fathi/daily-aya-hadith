@@ -103,7 +103,12 @@ export class AyahRenderer implements ContentRenderer {
     if (locale === 'ar') {
       builder.labelled(labels.translation, text(payload.translation));
     }
-    builder.labelled(labels.tafsir, text(payload.conciseTafsir));
+
+    const tafsirResourceName = text(payload.tafsirResourceName);
+    const tafsirLabel = tafsirResourceName
+      ? `${labels.tafsir} (${tafsirResourceName})`
+      : labels.tafsir;
+    builder.labelled(tafsirLabel, text(payload.conciseTafsir));
     builder.bullets(labels.wordMeanings, this.wordMeanings(payload));
     builder.labelled(labels.sababAlNuzul, this.sababAlNuzul(payload, labels));
     builder.labelled(labels.reflection, text(payload.reflection));

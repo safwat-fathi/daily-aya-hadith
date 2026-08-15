@@ -24,6 +24,14 @@ function hadithLabel(item: { bookSlug: string; hadithNumber?: string }): string 
   return item.hadithNumber ? `${item.bookSlug} #${item.hadithNumber}` : item.bookSlug;
 }
 
+function hadithErrorLabel(item: {
+  bookSlug: string;
+  hadithNumber?: string;
+  message: string;
+}): string {
+  return `${hadithLabel(item)} (${item.message})`;
+}
+
 /** Compact one-line summary for the flash banner — the result's full per-bucket detail is
  * visible per-item once the operator lands on the filtered draft review queue. */
 function summarize(result: HadithImportResult): string {
@@ -39,7 +47,7 @@ function summarize(result: HadithImportResult): string {
     parts.push(`Skipped ${result.skippedNoEnglish.map(hadithLabel).join(', ')} (no English text).`);
   }
   if (result.errors.length > 0) {
-    parts.push(`Failed ${result.errors.map(hadithLabel).join(', ')}.`);
+    parts.push(`Failed ${result.errors.map(hadithErrorLabel).join(', ')}.`);
   }
 
   return parts.length > 0 ? parts.join(' ') : 'Nothing imported.';

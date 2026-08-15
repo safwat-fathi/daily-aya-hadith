@@ -13,7 +13,9 @@ export class RunsController {
   constructor(private readonly runsService: RunsService) {}
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get a delivery cycle: selected content, snapshot, per-subscriber outcomes' })
+  @ApiOperation({
+    summary: 'Get a delivery cycle: selected content, snapshot, per-subscriber outcomes',
+  })
   @ApiOkResponse({ type: RunResponseDto })
   getById(@Param() params: RunIdParamDto): Promise<RunDetail> {
     return this.runsService.getById(params.id);
