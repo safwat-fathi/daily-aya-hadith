@@ -109,7 +109,11 @@ export class AyahRenderer implements ContentRenderer {
       ? `${labels.tafsir} (${tafsirResourceName})`
       : labels.tafsir;
     builder.labelled(tafsirLabel, text(payload.conciseTafsir));
-    builder.bullets(labels.wordMeanings, this.wordMeanings(payload));
+    
+    if (locale !== 'ar') {
+      builder.bullets(labels.wordMeanings, this.wordMeanings(payload));
+    }
+
     builder.labelled(labels.sababAlNuzul, this.sababAlNuzul(payload, labels));
     builder.labelled(labels.reflection, text(payload.reflection));
     builder.labelled(labels.practicalAction, text(payload.practicalAction));

@@ -152,6 +152,18 @@ export class QuranImportService {
     options?: ImportOptions,
   ): Promise<string> {
     const includeWordMeanings = options?.includeWordMeanings ?? true;
+    const effectiveTafsirId =
+      options?.tafsirResourceId ?? this.client.getDefaultResourceIds().tafsirResourceId;
+
+    let tafsirResourceName: string | undefined = undefined;
+    if (hasText(effectiveTafsirId)) {
+      const tafsirs = await this.client.listTafsirs();
+      const match = tafsirs.find((t) => t.id === effectiveTafsirId);
+      if (match) {
+        tafsirResourceName = match.name;
+      }
+    }
+
     const verse = await this.client.getVerse(surahNumber, ayahNumber, {
       translationResourceId: options?.translationResourceId,
       tafsirResourceId: options?.tafsirResourceId,
@@ -186,6 +198,7 @@ export class QuranImportService {
         ayahNumber,
         translation: clampToPayloadLimit(verse.translation),
         conciseTafsir: clampToPayloadLimit(verse.tafsir),
+        tafsirResourceName,
         wordMeanings,
       },
       sources: [
