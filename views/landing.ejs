@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/admin.css" />
+  <style>
+    .landing-card {
+      max-width: 600px;
+      margin: 4rem auto;
+      padding: 2rem;
+    }
+    .landing-card h1 {
+      margin-top: 0;
+      color: var(--brand);
+    }
+    .landing-card p {
+      line-height: 1.6;
+      color: var(--text);
+    }
+    .call-to-action {
+      margin-top: 2rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+    }
+    .button-primary {
+      display: inline-block;
+      margin-top: 1rem;
+      padding: 0.75rem 1.5rem;
+      background: var(--brand);
+      color: white;
+      text-decoration: none;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .button-primary:hover {
+      background: var(--brand-hover);
+    }
+  </style>
+</head>
+<body class="login-page">
+  <div class="card landing-card">
+    <h1>Aya & Hadith Bot</h1>
+    <p>
+      Welcome to the Aya & Hadith Slack bot! This service delivers carefully selected, human-reviewed Islamic content directly to you in a daily direct message.
+    </p>
+    <p>
+      <strong>How it works:</strong> We use a rotating delivery schedule. One day you will receive an inspiring Quranic Aya, and the following day you will receive a meaningful Hadith.
+    </p>
+    <div class="call-to-action">
+      <h2>How to use it</h2>
+      <p>
+        To start receiving daily messages, simply send a direct message to the bot in Slack with the command:
+        <br><code>/subscribe</code>
+      </p>
+      <a href="/api/v1/slack/install" class="button-primary">Add to Slack</a>
+    </div>
+  </div>
+</body>
+</html>

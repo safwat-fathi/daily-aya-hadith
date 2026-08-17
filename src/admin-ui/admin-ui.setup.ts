@@ -21,7 +21,7 @@ export function configureAdminUiViews(app: NestExpressApplication): void {
 
   app.setBaseViewsDir(join(process.cwd(), 'views'));
   app.setViewEngine('ejs');
-  app.useStaticAssets(join(process.cwd(), 'public'), { prefix: '/static' });
+  app.useStaticAssets(join(process.cwd(), 'public'));
 
   // Dedicated pool, separate from Prisma's own connection to the same database (prisma.service.ts)
   // — connect-pg-simple manages its own lifecycle and issues raw SQL against the `session` table

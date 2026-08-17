@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ContentStatus, ContentType, SelectionStrategy } from '../generated/prisma/enums';
 import type { Prisma } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -9,12 +9,15 @@ export type SelectableContent = Prisma.ContentItemGetPayload<{
 }>;
 
 /**
- * PLAN.md §5.14. Runs inside `DeliveryOrchestratorService.reserveRun`'s `Serializable`
- * transaction when selecting content for a new cycle, and read-only (against the base
- * `PrismaService`, no transaction) for the `GET /streams/:id/next-content` dry run.
+ * PLAN.md §5.14, including the `ALTERNATE_BY_TYPE` rotation strategy. Runs inside
+ * `DeliveryOrchestratorService.reserveRun`'s `Serializable` transaction when selecting content
+ * for a new cycle, and read-only (against the base `PrismaService`, no transaction) for the
+ * `GET /streams/:id/next-content` dry run.
  */
 @Injectable()
 export class ContentSelectionService {
+  private readonly logger = new Logger(ContentSelectionService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async select(
@@ -38,6 +41,10 @@ export class ContentSelectionService {
 
     if (stream.selectionStrategy === SelectionStrategy.RANDOM_WITHOUT_REPLACEMENT) {
       return this.selectRandomWithoutReplacement(eligible, lastSentAtByContentId);
+    }
+
+    if (stream.selectionStrategy === SelectionStrategy.ALTERNATE_BY_TYPE) {
+      return this.selectAlternateByType(client, stream, eligible, lastSentAtByContentId);
     }
 
     return this.selectLeastRecentlySent(eligible, lastSentAtByContentId);
@@ -85,6 +92,77 @@ export class ContentSelectionService {
     }
 
     return map;
+  }
+
+  /**
+   * The `ContentType` of the most recently *selected* item for this stream, or null if no prior
+   * run ever carried a `contentId`. Note this is "selected", not "successfully sent": a `SKIPPED`
+   * run can still carry a non-null `contentId` — see `DeliveryOrchestratorService.createRun`'s
+   * `CONTENT_EXCEEDS_SEND_LIMITS` branch, which deliberately keeps `contentId` set on an oversize
+   * item specifically so it's treated as "just used" rather than retried forever. Rotation
+   * advancing past that case too is correct, for the same reason. Only the `NO_ELIGIBLE_CONTENT`
+   * SKIPPED case (null `contentId`, no item was ever selected) doesn't advance rotation — a due
+   * type with no eligible content at all keeps being retried on the next cycle instead of the
+   * rotation silently moving past it. Deliberately reads `DeliveryRun` rather than any
+   * separately-tracked rotation position, per PLAN.md §5.14's "selection history reads from
+   * DeliveryRun" principle.
+   */
+  private async lastSelectedType(
+    client: Prisma.TransactionClient,
+    streamId: string,
+  ): Promise<ContentType | null> {
+    const lastRun = await client.deliveryRun.findFirst({
+      where: { streamId, contentId: { not: null } },
+      orderBy: { deliveryLocalDate: 'desc' },
+      select: { content: { select: { type: true } } },
+    });
+
+    return lastRun?.content?.type ?? null;
+  }
+
+  /**
+   * Strict rotation through `stream.allowedContentTypes`, in array order. The due type is the one
+   * after `lastSelectedType` in that array (wrapping); a stream with no prior selection, or whose
+   * last-selected type is no longer in `allowedContentTypes`, starts at index 0. If the due
+   * type's pool is empty, tries the next type in rotation order (wrapping) before giving up, so a
+   * stream still sends most cycles even when one type is temporarily short on approved content —
+   * rotation self-heals once that type has content again, since `lastSelectedType` always
+   * reflects what was actually chosen, not what was "supposed to" be due.
+   */
+  private async selectAlternateByType(
+    client: Prisma.TransactionClient,
+    stream: StreamRecord,
+    eligible: SelectableContent[],
+    lastSentAtByContentId: Map<string, Date>,
+  ): Promise<SelectableContent> {
+    const rotation = stream.allowedContentTypes;
+    const lastType = await this.lastSelectedType(client, stream.id);
+    const lastIndex = lastType === null ? -1 : rotation.indexOf(lastType);
+    const dueIndex = lastIndex === -1 ? 0 : (lastIndex + 1) % rotation.length;
+
+    for (let offset = 0; offset < rotation.length; offset++) {
+      const candidateType = rotation[(dueIndex + offset) % rotation.length];
+      const pool = eligible.filter((item) => item.type === candidateType);
+
+      if (pool.length > 0) {
+        if (offset > 0) {
+          this.logger.warn({
+            event: 'content_selection_rotation_fallback',
+            streamId: stream.id,
+            dueType: rotation[dueIndex],
+            chosenType: candidateType,
+          });
+        }
+        return this.selectLeastRecentlySent(pool, lastSentAtByContentId);
+      }
+    }
+
+    // Unreachable: `select()` already returned null when `eligible` was empty, and `eligible` is
+    // pre-filtered to `type: { in: rotation }`, so at least one type in `rotation` has a non-empty
+    // pool by construction.
+    throw new Error(
+      `ALTERNATE_BY_TYPE: no eligible content found for stream "${stream.id}" despite a non-empty eligible pool.`,
+    );
   }
 
   /** Never-sent content first, then oldest `lastSentAt`, tie-broken by `createdAt ASC`. */

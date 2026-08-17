@@ -7,7 +7,12 @@ import {
   ContentSelectionService,
   type SelectableContent,
 } from '../deliveries/content-selection.service';
-import { Prisma, ScheduleFrequency, SelectionStrategy } from '../generated/prisma/client';
+import {
+  ContentType,
+  Prisma,
+  ScheduleFrequency,
+  SelectionStrategy,
+} from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { workspaceNotFound } from '../workspaces/workspaces.errors';
 import {
@@ -52,6 +57,21 @@ export class StreamsService {
     return [];
   }
 
+  private validateAndNormalizeAllowedContentTypes(
+    selectionStrategy: SelectionStrategy,
+    allowedContentTypes: ContentType[],
+  ): ContentType[] {
+    const deduped = Array.from(new Set(allowedContentTypes));
+
+    if (selectionStrategy === SelectionStrategy.ALTERNATE_BY_TYPE && deduped.length < 2) {
+      throw scheduleInvalid(
+        'ALTERNATE_BY_TYPE requires at least 2 distinct content types in allowedContentTypes.',
+      );
+    }
+
+    return deduped;
+  }
+
   async create(dto: CreateStreamDto, requestId: string): Promise<StreamRecord> {
     const workspace = await this.prisma.slackWorkspace.findUnique({
       where: { id: dto.workspaceId },
@@ -63,6 +83,11 @@ export class StreamsService {
     }
 
     const daysOfWeek = this.validateAndNormalizeDaysOfWeek(dto.frequency, dto.daysOfWeek);
+    const selectionStrategy = dto.selectionStrategy ?? SelectionStrategy.LEAST_RECENTLY_SENT;
+    const allowedContentTypes = this.validateAndNormalizeAllowedContentTypes(
+      selectionStrategy,
+      dto.allowedContentTypes,
+    );
 
     return this.prisma.$transaction(async (transaction) => {
       const stream = await transaction.scheduleStream.create({
@@ -75,8 +100,8 @@ export class StreamsService {
           timezone: dto.timezone,
           daysOfWeek,
           locale: dto.locale ?? 'ar',
-          allowedContentTypes: dto.allowedContentTypes,
-          selectionStrategy: dto.selectionStrategy ?? SelectionStrategy.LEAST_RECENTLY_SENT,
+          allowedContentTypes,
+          selectionStrategy,
           maxAutomaticAttempts: dto.maxAutomaticAttempts ?? 1,
         },
       });
@@ -141,8 +166,14 @@ export class StreamsService {
 
     const mergedFrequency = dto.frequency ?? existing.frequency;
     const mergedDaysOfWeek = dto.daysOfWeek ?? existing.daysOfWeek;
+    const mergedSelectionStrategy = dto.selectionStrategy ?? existing.selectionStrategy;
+    const mergedAllowedContentTypes = dto.allowedContentTypes ?? existing.allowedContentTypes;
 
     const daysOfWeek = this.validateAndNormalizeDaysOfWeek(mergedFrequency, mergedDaysOfWeek);
+    const allowedContentTypes = this.validateAndNormalizeAllowedContentTypes(
+      mergedSelectionStrategy,
+      mergedAllowedContentTypes,
+    );
 
     return this.prisma.$transaction(async (transaction) => {
       const stream = await transaction.scheduleStream.update({
@@ -154,7 +185,7 @@ export class StreamsService {
           timezone: dto.timezone,
           daysOfWeek,
           locale: dto.locale,
-          allowedContentTypes: dto.allowedContentTypes,
+          allowedContentTypes,
           selectionStrategy: dto.selectionStrategy,
           maxAutomaticAttempts: dto.maxAutomaticAttempts,
         },

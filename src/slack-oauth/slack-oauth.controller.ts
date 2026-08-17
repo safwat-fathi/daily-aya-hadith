@@ -70,9 +70,10 @@ export class SlackOauthController {
     const heading = isReinstall ? 'Reinstalled' : 'Installed';
     const name = escapeHtml(workspaceName);
     // Only claim what actually happened: `completeInstall` still succeeds even if default-stream
-    // provisioning failed, so this must not unconditionally promise a working Daily Aya stream.
+    // provisioning failed, so this must not unconditionally promise a working Daily Aya & Hadith
+    // stream.
     const streamNote = hasDefaultStream
-      ? '<p>A default daily Ayah stream was set up automatically.</p>'
+      ? '<p>A default daily Ayah &amp; Hadith stream was set up automatically, alternating between the two.</p>'
       : '<p><strong>Note:</strong> automatic stream setup failed. An admin needs to create one via the admin API before any content is sent.</p>';
 
     return `<!doctype html>
@@ -80,7 +81,7 @@ export class SlackOauthController {
 <head><meta charset="utf-8"><title>${heading} — Daily Aya &amp; Hadith</title></head>
 <body style="font-family: system-ui, sans-serif; max-width: 32rem; margin: 4rem auto; text-align: center;">
   <h1>${heading} into ${name}</h1>
-  <p>Send <code>/subscribe</code> to the bot in Slack to start receiving Daily Aya.</p>
+  <p>Send <code>/subscribe</code> to the bot in Slack to start receiving Daily Aya &amp; Hadith.</p>
   ${streamNote}
 </body>
 </html>`;

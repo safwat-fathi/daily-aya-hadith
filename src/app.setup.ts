@@ -18,6 +18,7 @@ export function configureApplication(app: NestExpressApplication): void {
   // the installed `@nestjs/platform-express` rather than assumed, so no override is added here.
   app.setGlobalPrefix('api/v1', {
     exclude: [
+      { path: '', method: RequestMethod.GET },
       { path: 'health/live', method: RequestMethod.GET },
       { path: 'health/ready', method: RequestMethod.GET },
     ],

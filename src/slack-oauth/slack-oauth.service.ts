@@ -6,7 +6,12 @@ import { AuditService } from '../audit/audit.service';
 import { TokenCipherService } from '../common/crypto/token-cipher.service';
 import { hasText } from '../common/utils/text';
 import type { AppEnvironment } from '../config/env.validation';
-import { ContentType, ScheduleFrequency, type Prisma } from '../generated/prisma/client';
+import {
+  ContentType,
+  ScheduleFrequency,
+  SelectionStrategy,
+  type Prisma,
+} from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { SlackClientFactory } from '../slack/slack-client.factory';
 import { CreateStreamDto } from '../streams/dto/stream.dto';
@@ -26,7 +31,7 @@ import {
  */
 export const OAUTH_BOT_SCOPES = ['chat:write', 'commands', 'im:history'] as const;
 
-const DEFAULT_STREAM_NAME = 'Daily Aya';
+const DEFAULT_STREAM_NAME = 'Daily Aya & Hadith';
 const DEFAULT_STREAM_SEND_TIME = '09:00';
 const OAUTH_INSTALL_ACTOR_ID = 'slack-oauth-install';
 
@@ -192,7 +197,8 @@ export class SlackOauthService {
       frequency: ScheduleFrequency.DAILY,
       sendTime: DEFAULT_STREAM_SEND_TIME,
       timezone: this.defaultTimezone,
-      allowedContentTypes: [ContentType.AYAH],
+      allowedContentTypes: [ContentType.AYAH, ContentType.HADITH],
+      selectionStrategy: SelectionStrategy.ALTERNATE_BY_TYPE,
       actorId: OAUTH_INSTALL_ACTOR_ID,
     };
 

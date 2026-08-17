@@ -511,7 +511,9 @@ For `WEEKLY`, at least one day must be specified.
 
 Use configuration rather than hardcoding, but seed:
 
-- Primary Aya/Hadith stream: daily at 09:00 in `Africa/Cairo`.
+- Primary Aya/Hadith stream: daily at 09:00 in `Africa/Cairo`, `allowedContentTypes: [AYAH,
+  HADITH]`, `selectionStrategy: ALTERNATE_BY_TYPE` (see §5.14) — this is what's auto-provisioned
+  on Slack OAuth install (`SlackOauthService.ensureDefaultStream`).
 - Blessing reminder: either included in the primary rotation or configured as a separate daily stream.
 - Companion story: one selected weekday at 09:00.
 
@@ -519,12 +521,13 @@ The administrator must be able to change these values.
 
 ## 5.14 Content selection
 
-Supported MVP strategy:
+Supported strategies:
 
 ```ts
 enum SelectionStrategy {
   LEAST_RECENTLY_SENT
   RANDOM_WITHOUT_REPLACEMENT
+  ALTERNATE_BY_TYPE
 }
 ```
 
@@ -544,6 +547,23 @@ Selection requirements:
 Selection is a property of the **cycle**, not of any one subscriber: it runs once per stream per local delivery date and every subscriber reaching that date receives the result. Selection history therefore reads from `DeliveryRun`, not from the per-subscriber delivery rows.
 
 The selection query should use a database transaction and a stream-level lock or equivalent idempotency mechanism.
+
+`ALTERNATE_BY_TYPE` cycles strictly through the stream's `allowedContentTypes`, in array order,
+one type per cycle — this is what backs the "primary daily stream rotating between ayah and
+hadith" example in §5.12. The due type is derived from the type of the most recently *selected*
+content for the stream (the newest `DeliveryRun` with a non-null `contentId`, per rule 8's
+`DeliveryRun`-as-history principle above), advanced one position, wrapping; a stream with no
+prior selection starts at index 0. "Selected" here is not the same as "successfully sent": a
+`SKIPPED` run whose content exceeded Slack's send limits deliberately keeps `contentId` set (so
+that oversize item is deprioritized rather than retried forever, matching the same convention
+`LEAST_RECENTLY_SENT` already uses), so rotation advances past it too. Only a `SKIPPED` run with
+no eligible content at all (`contentId` null) leaves the rotation where it was, so a due type
+with a temporarily empty pool is simply retried on the next cycle rather than being silently
+skipped over. If the due type's pool is empty but another allowed type's pool is not, selection
+falls back to the next type in rotation order (wrapping) rather than skipping the cycle outright,
+so a stream still delivers most cycles; rotation self-heals back to strict alternation once the
+due type has eligible content again. Requires `allowedContentTypes` to contain at least 2 distinct
+values to be meaningful — enforced at the service layer, not a database constraint.
 
 ## 5.15 Delivery lifecycle
 

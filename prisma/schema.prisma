@@ -43,6 +43,18 @@ enum ScheduleFrequency {
 enum SelectionStrategy {
   LEAST_RECENTLY_SENT
   RANDOM_WITHOUT_REPLACEMENT
+  /// Cycles strictly through `ScheduleStream.allowedContentTypes`, in array order, one type per
+  /// cycle. The "due" type is derived from the type of the most recently *selected* item for the
+  /// stream (the newest `DeliveryRun` with a non-null `contentId` — this includes a `SKIPPED` run
+  /// whose content exceeded Slack's send limits, since `contentId` is deliberately kept set on
+  /// that path too; only a `SKIPPED` run with no eligible content at all leaves `contentId` null
+  /// and doesn't advance rotation). No separate rotation-position state, per PLAN.md §5.14's
+  /// "selection history reads from DeliveryRun" principle — a stream with no prior selection
+  /// starts at index 0. If the due type's pool is empty, falls back to the next type in rotation
+  /// order (wrapping) rather than skipping the cycle outright; PLAN.md §5.14. Requires
+  /// `allowedContentTypes` to contain at least 2 distinct values (enforced in `StreamsService`,
+  /// not a DB constraint).
+  ALTERNATE_BY_TYPE
 }
 
 enum DeliveryStatus {

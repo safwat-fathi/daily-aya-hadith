@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { AppController } from './app.controller';
 import { AdminUiModule } from './admin-ui/admin-ui.module';
 import { ClockModule } from './common/clock/clock.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
@@ -44,6 +45,7 @@ import { StreamsModule } from './streams/streams.module';
     WorkspacePurgeModule,
     AdminUiModule,
   ],
+  controllers: [AppController],
   providers: [
     {
       provide: APP_GUARD,
