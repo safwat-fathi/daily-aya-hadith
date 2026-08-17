@@ -37,7 +37,8 @@
       }
     </style>
   </head>
-  <body class="bg-gray-50 min-h-screen p-6 md:p-12 text-gray-800 relative">
+  <body class="bg-gray-50 min-h-screen flex flex-col text-gray-800 relative">
+    <main class="flex-grow p-6 md:p-12 relative">
     <!-- Language Toggle -->
     <div
       class="absolute top-4 right-4 flex gap-2 text-gray-600 bg-white px-3 py-1 rounded-full shadow-sm"
@@ -154,22 +155,8 @@
 
       <p class="mt-4 text-sm text-gray-500" dir="ltr">safwat.rashwan@gmail.com</p>
 
-      <div
-        class="mt-12 pt-6 border-t border-gray-100 flex justify-center gap-6 text-sm text-gray-500"
-      >
-        <a href="/" class="hover:text-blue-600 transition-colors">
-          <span data-lang="en">Installation</span>
-          <span data-lang="ar">الرئيسية</span>
-        </a>
-        <a href="/privacy.html" class="hover:text-blue-600 transition-colors">
-          <span data-lang="en">Privacy Policy</span>
-          <span data-lang="ar">سياسة الخصوصية</span>
-        </a>
-        <a href="/tos.html" class="hover:text-blue-600 transition-colors">
-          <span data-lang="en">Terms of Service</span>
-          <span data-lang="ar">شروط الخدمة</span>
-        </a>
-      </div>
     </div>
+    </main>
+    <%- include('./_layout/_site_footer') %>
   </body>
 </html>
