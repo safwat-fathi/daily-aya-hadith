@@ -6,23 +6,25 @@
 </div>
 
 <div class="card">
-  <table>
-    <thead><tr><th>Slack user ID</th><th>Workspace</th><th>Timezone</th><th>Locale</th><th>Active</th></tr></thead>
-    <tbody>
-      <% items.forEach(function (sub) { %>
-        <tr>
-          <td><a href="/api/v1/admin/subscribers/<%= sub.id %>"><%= sub.slackUserId %></a></td>
-          <td><%= sub.workspaceId %></td>
-          <td><%= sub.timezone %></td>
-          <td><%= sub.locale %></td>
-          <td><%= sub.isActive ? 'Yes' : 'No' %></td>
-        </tr>
-      <% }) %>
-      <% if (items.length === 0) { %>
-        <tr><td colspan="5" class="muted">No subscribers yet.</td></tr>
-      <% } %>
-    </tbody>
-  </table>
+  <div class="table-responsive">
+    <table>
+      <thead><tr><th>Slack user ID</th><th>Workspace</th><th>Timezone</th><th>Locale</th><th>Active</th></tr></thead>
+      <tbody>
+        <% items.forEach(function (sub) { %>
+          <tr>
+            <td><a href="/api/v1/admin/subscribers/<%= sub.id %>"><%= sub.slackUserId %></a></td>
+            <td><%= sub.workspaceId %></td>
+            <td><%= sub.timezone %></td>
+            <td><%= sub.locale %></td>
+            <td><%= sub.isActive ? 'Yes' : 'No' %></td>
+          </tr>
+        <% }) %>
+        <% if (items.length === 0) { %>
+          <tr><td colspan="5" class="muted">No subscribers yet.</td></tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
   <%- include('../partials/_pagination', { pagination, basePath }) %>
 </div>
 

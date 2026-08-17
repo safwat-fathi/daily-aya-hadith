@@ -37,31 +37,33 @@
 </form>
 
 <div class="card">
-  <table>
-    <thead>
-      <tr>
-        <th>Title</th>
-        <th>Type</th>
-        <th>Status</th>
-        <th>Locale</th>
-        <th>Updated</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% items.forEach(function (item) { %>
+  <div class="table-responsive">
+    <table>
+      <thead>
         <tr>
-          <td><a href="/api/v1/admin/content/<%= item.id %>"><%= item.title || '(untitled)' %></a></td>
-          <td><%= item.type %></td>
-          <td><%- include('../partials/_status-badge', { status: item.status }) %></td>
-          <td><%= item.locale %></td>
-          <td><%= new Date(item.updatedAt).toLocaleString() %></td>
+          <th>Title</th>
+          <th>Type</th>
+          <th>Status</th>
+          <th>Locale</th>
+          <th>Updated</th>
         </tr>
-      <% }) %>
-      <% if (items.length === 0) { %>
-        <tr><td colspan="5" class="muted">No content matches these filters.</td></tr>
-      <% } %>
-    </tbody>
-  </table>
+      </thead>
+      <tbody>
+        <% items.forEach(function (item) { %>
+          <tr>
+            <td><a href="/api/v1/admin/content/<%= item.id %>"><%= item.title || '(untitled)' %></a></td>
+            <td><%= item.type %></td>
+            <td><%- include('../partials/_status-badge', { status: item.status }) %></td>
+            <td><%= item.locale %></td>
+            <td><%= new Date(item.updatedAt).toLocaleString() %></td>
+          </tr>
+        <% }) %>
+        <% if (items.length === 0) { %>
+          <tr><td colspan="5" class="muted">No content matches these filters.</td></tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
   <%- include('../partials/_pagination', { pagination, basePath }) %>
 </div>
 

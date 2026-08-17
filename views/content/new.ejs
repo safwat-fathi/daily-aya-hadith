@@ -38,7 +38,10 @@
 
     <%- include('../partials/_source-fields', { sources, sourceTypes }) %>
 
-    <button type="submit" class="primary">Create draft</button>
+    <div class="actions">
+      <button type="submit" class="primary">Create draft</button>
+      <a href="/api/v1/admin/content" class="btn">Cancel</a>
+    </div>
   </form>
 <% } %>
 

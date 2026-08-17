@@ -6,26 +6,28 @@
 </div>
 
 <div class="card">
-  <table>
-    <thead>
-      <tr><th>Name</th><th>Frequency</th><th>Send time</th><th>Timezone</th><th>Types</th><th>Enabled</th></tr>
-    </thead>
-    <tbody>
-      <% items.forEach(function (stream) { %>
-        <tr>
-          <td><a href="/api/v1/admin/streams/<%= stream.id %>"><%= stream.name %></a></td>
-          <td><%= stream.frequency %></td>
-          <td><%= stream.sendTime %></td>
-          <td><%= stream.timezone %></td>
-          <td><%= stream.allowedContentTypes.join(', ') %></td>
-          <td><%= stream.isEnabled ? 'Yes' : 'No' %></td>
-        </tr>
-      <% }) %>
-      <% if (items.length === 0) { %>
-        <tr><td colspan="6" class="muted">No streams yet.</td></tr>
-      <% } %>
-    </tbody>
-  </table>
+  <div class="table-responsive">
+    <table>
+      <thead>
+        <tr><th>Name</th><th>Frequency</th><th>Send time</th><th>Timezone</th><th>Types</th><th>Enabled</th></tr>
+      </thead>
+      <tbody>
+        <% items.forEach(function (stream) { %>
+          <tr>
+            <td><a href="/api/v1/admin/streams/<%= stream.id %>"><%= stream.name %></a></td>
+            <td><%= stream.frequency %></td>
+            <td><%= stream.sendTime %></td>
+            <td><%= stream.timezone %></td>
+            <td><%= stream.allowedContentTypes.join(', ') %></td>
+            <td><%= stream.isEnabled ? 'Yes' : 'No' %></td>
+          </tr>
+        <% }) %>
+        <% if (items.length === 0) { %>
+          <tr><td colspan="6" class="muted">No streams yet.</td></tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
   <%- include('../partials/_pagination', { pagination, basePath }) %>
 </div>
 

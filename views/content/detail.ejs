@@ -123,18 +123,20 @@
   <% if (deliveries.length === 0) { %>
     <p class="muted">Never delivered.</p>
   <% } else { %>
-    <table>
-      <thead><tr><th>Status</th><th>Run date</th><th>Sent at</th></tr></thead>
-      <tbody>
-        <% deliveries.forEach(function (delivery) { %>
-          <tr>
-            <td><%- include('../partials/_status-badge', { status: delivery.status }) %></td>
-            <td><%= delivery.run.deliveryLocalDate %></td>
-            <td><%= delivery.sentAt ? delivery.sentAt.toLocaleString() : '—' %></td>
-          </tr>
-        <% }) %>
-      </tbody>
-    </table>
+    <div class="table-responsive">
+      <table>
+        <thead><tr><th>Status</th><th>Run date</th><th>Sent at</th></tr></thead>
+        <tbody>
+          <% deliveries.forEach(function (delivery) { %>
+            <tr>
+              <td><%- include('../partials/_status-badge', { status: delivery.status }) %></td>
+              <td><%= delivery.run.deliveryLocalDate %></td>
+              <td><%= delivery.sentAt ? delivery.sentAt.toLocaleString() : '—' %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
   <% } %>
 </div>
 

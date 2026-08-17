@@ -34,6 +34,7 @@ a {
 .site-header {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 1.5rem;
   padding: 0.75rem 1.5rem;
   background: var(--surface);
@@ -47,6 +48,7 @@ a {
 
 .site-header nav {
   display: flex;
+  flex-wrap: wrap;
   gap: 1rem;
 }
 
@@ -105,6 +107,12 @@ main {
   background: var(--danger-bg);
   color: var(--danger);
   border: 1px solid var(--danger);
+}
+
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
 }
 
 table {
