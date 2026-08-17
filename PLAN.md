@@ -21,7 +21,7 @@ The bot must support:
 2. Hadith with verification and a concise explanation.
 3. Short stories from the lives of the Companions.
 4. Reminders about the countless blessings of Allah.
-5. Human review and approval before any content can be sent.
+5. Human review and approval before any manually-authored content can be sent — content pulled in via the controlled Quran Foundation/hadithapi.com imports (§14.2) is the one exception, stored already approved.
 6. Reliable scheduling without duplicate deliveries.
 7. Clear Slack Block Kit formatting.
 8. An admin API for managing content, schedules, subscriptions, previews, and delivery history.
@@ -34,7 +34,7 @@ The application is a content-delivery system, not a religious-content generation
 
 ## 2.1 Religious accuracy over automation
 
-All content must be stored locally in the database and approved by a human reviewer before publication.
+All content must be stored locally in the database and approved before publication — manually-authored content by a human reviewer, imported content (§14.2) automatically via the same strict approval-grade validation.
 
 External services may be used during a controlled import or verification process, but the runtime scheduler must not call an external Quran, hadith, tafsir, or AI API to construct the daily message.
 
@@ -1965,6 +1965,16 @@ A separate import script may:
 - Produce an import report.
 - Never auto-approve imported content unless the source file itself is a signed, reviewer-approved release artifact and the process is explicitly configured.
 
+**Superseded for the two implemented importers.** `QuranImportService` and `HadithImportService`
+(`src/quran-foundation/`, `src/hadith-api/`) pull directly from Quran.Foundation and hadithapi.com
+rather than from a reviewed local file, and — per a confirmed, deliberate policy decision — create
+content via `ContentService.createApproved()`, which runs the same strict approval-grade validation
+`ReviewService.approve()` applies (required fields per type, required source, checksum) and inserts
+the row already `APPROVED`, with no human review step. A malformed item fails validation and is
+reported as an import error instead of being created. This is a live exception to the "never
+auto-approve" rule above, not a hypothetical one; the rule as written still governs any future
+file-based import script.
+
 ## 14.3 Suggested source file structure
 
 ```json
@@ -2147,10 +2157,13 @@ row counts, constraint enforcement, audit rows, and rollback after a failed requ
 ## 17.4 Religious content
 
 Automated checks could not verify theological correctness in any case. Human review remains
-mandatory, and the reviewer is responsible for text, citations, grading, and attribution.
-Verification here is limited to the mechanical guarantees: required source fields are present,
-Quran references are structurally valid, an approved hadith carries a collection, unreviewed
-content cannot be delivered, and stored Arabic reaches the renderer unchanged.
+mandatory for manually-authored content, and the reviewer is responsible for text, citations,
+grading, and attribution. Content imported from Quran Foundation/hadithapi.com (§14.2) is the
+one exception — it skips human review and relies on the upstream API plus the same mechanical
+approval-grade validation described below. Verification here is limited to the mechanical
+guarantees: required source fields are present, Quran references are structurally valid, an
+approved hadith carries a collection, unapproved content cannot be delivered, and stored Arabic
+reaches the renderer unchanged.
 
 # 18. Logging and Error Handling
 
@@ -2499,7 +2512,7 @@ The coding agent must follow these rules:
 5. Do not build a frontend unless explicitly requested.
 6. Do not generate real religious content as seed data.
 7. Use placeholders clearly marked as development fixtures.
-8. Do not auto-approve imported content.
+8. ~~Do not auto-approve imported content.~~ Superseded: `QuranImportService`/`HadithImportService` now auto-approve via `ContentService.createApproved()` — see §14.2.
 9. Add migrations for every schema change.
 10. Do not claim completion while acceptance criteria are failing.
 11. Document every environment variable.
@@ -2575,7 +2588,7 @@ Use:
 
 The most important correctness rule is:
 
-> No content is delivered unless it is locally stored, source-referenced, human-reviewed, approved, selected through an idempotent delivery transaction, and successfully accepted by Slack.
+> No content is delivered unless it is locally stored, source-referenced, approved (by a human reviewer for manually-authored content, or automatically via the same strict validation for Quran Foundation/hadithapi.com imports — §14.2), selected through an idempotent delivery transaction, and successfully accepted by Slack.
 
 ---
 

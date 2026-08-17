@@ -34,3 +34,25 @@ export function contentValidationFailed(details: ValidationErrorDetail[]): BadRe
     details,
   });
 }
+
+/** `error.message` on a `contentValidationFailed()` exception is the generic "Content payload is
+ * invalid." — the actual per-field reasons live in the exception response's `details` array
+ * instead. Callers that only see `error.message` (e.g. the import services' per-item error
+ * reporting) need this to surface something an operator can act on. */
+export function describeContentValidationFailure(error: unknown): string | undefined {
+  if (!(error instanceof BadRequestException)) {
+    return undefined;
+  }
+
+  const response = error.getResponse();
+  if (typeof response !== 'object' || response === null) {
+    return undefined;
+  }
+
+  const { code, details } = response as { code?: unknown; details?: unknown };
+  if (code !== 'CONTENT_VALIDATION_FAILED' || !Array.isArray(details) || details.length === 0) {
+    return undefined;
+  }
+
+  return (details as ValidationErrorDetail[]).map((detail) => detail.message).join('; ');
+}

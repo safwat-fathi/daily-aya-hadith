@@ -89,6 +89,6 @@ export class HadithImportUiController {
       setFlash(request, 'error', extractErrorMessage(error));
     }
 
-    response.redirect('/api/v1/admin/content?status=DRAFT&type=HADITH');
+    response.redirect('/api/v1/admin/content?status=APPROVED&type=HADITH');
   }
 }

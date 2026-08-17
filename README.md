@@ -155,6 +155,12 @@ re-validates the payload and additionally requires, per type:
 Every item needs at least one source with a non-blank title. A failed approval rolls back
 entirely: status, checksum, and the audit trail are left untouched.
 
+**Imports are the one exception to manual review.** `POST /hadith-api/import` and
+`POST /quran-foundation/import` (and their admin-UI equivalents) create content already
+`APPROVED`, checked against these same approval rules at creation time instead of at a later
+manual approval step — an item that fails validation is reported as an import error and never
+created. Content created through `POST /content` above is unaffected and still starts as `DRAFT`.
+
 Approved content is not edited in place. `POST /content/:id/revise` creates a new `DRAFT` row
 linked to the root item through `parentContentId` with an incremented `version`, preserving
 the original and its delivery history.

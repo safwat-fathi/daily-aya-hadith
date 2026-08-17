@@ -10,7 +10,7 @@
   <% } else { %>
     <p class="muted">Could not determine the next verse — check that Quran.Foundation credentials are configured.</p>
   <% } %>
-  <p class="hint">Imports the next verses in sequential Mushaf order as draft Aya content. Drafts still need to be reviewed and approved before they can be delivered — nothing here sends anything or bypasses review (PLAN.md §2.1).</p>
+  <p class="hint">Imports the next verses in sequential Mushaf order, stored already approved — validated against the same strict rules a human approval would apply. A verse that fails that validation is reported as an error instead of being created.</p>
 </div>
 
 <% if (languages.length > 0) { %>

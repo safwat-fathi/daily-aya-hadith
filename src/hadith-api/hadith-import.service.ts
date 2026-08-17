@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ContentService } from '../content/content.service';
+import { describeContentValidationFailure } from '../content/content.errors';
 import type { CreateContentDto } from '../content/dto/create-content.dto';
 import { hasText } from '../common/utils/text';
 import { ContentStatus, ContentType, SourceType } from '../generated/prisma/enums';
@@ -44,9 +45,9 @@ export interface HadithImportPreview {
 /**
  * Admin-triggered only (`HadithImportController`) — never called from the scheduler or delivery
  * path (PLAN.md §2.1). Walks hadithapi.com's 9 collections x {Sahih, Hasan} grades x pages, in
- * that priority order, creating DRAFT `HADITH` `ContentItem`s through the existing review
- * pipeline; nothing here bypasses `ContentService.create()`'s validation or auto-approves
- * anything.
+ * that priority order, creating `HADITH` `ContentItem`s already `APPROVED` via
+ * `ContentService.createApproved()` — gated by the same strict approval-grade validation a human
+ * reviewer would apply, but without the manual DRAFT → IN_REVIEW → APPROVED steps.
  */
 @Injectable()
 export class HadithImportService {
@@ -135,7 +136,9 @@ export class HadithImportService {
           result.created.push({ contentId, bookSlug, hadithNumber: row.hadithNumber });
         }
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Unknown import error';
+        const message =
+          describeContentValidationFailure(error) ??
+          (error instanceof Error ? error.message : 'Unknown import error');
         this.logger.error(`Failed to import ${bookSlug} #${row.hadithNumber}: ${message}`);
         result.errors.push({ bookSlug, hadithNumber: row.hadithNumber, message });
       }
@@ -257,7 +260,7 @@ export class HadithImportService {
       createdBy: actorId,
     };
 
-    const content = await this.contentService.create(dto, requestId);
+    const content = await this.contentService.createApproved(dto, requestId);
     return content.id;
   }
 }

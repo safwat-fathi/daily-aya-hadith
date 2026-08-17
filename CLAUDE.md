@@ -134,11 +134,14 @@ commands bypass all of this and send immediately, outside any stream's cycle.
 ### Content import (admin-triggered only)
 
 `src/quran-foundation/` and `src/hadith-api/` pull content from external APIs
-(Quran.Foundation OAuth API; hadithapi.com) and create it as `DRAFT` `ContentItem`s through the
-normal `ContentService.create()` path — nothing here bypasses validation or auto-approves.
-**Never wire either client into the scheduler/delivery path** — they're import-only, used from
-`QuranImportController`/`HadithImportController` and the admin-ui import screens
-(`views/quran-import/`, `views/hadith-import/`). Each keeps a singleton cursor row
+(Quran.Foundation OAuth API; hadithapi.com) and create it via
+`ContentService.createApproved()` — already `APPROVED`, gated by the same strict
+`validateForApproval` rules and checksum computation a human approval would apply (required
+fields per type, required source), but with no human review step. This is a deliberate policy
+exception (see `PLAN.md` §14.2) — manual creation via `ContentService.create()` is unaffected and
+still lands as `DRAFT`. **Never wire either client into the scheduler/delivery path** — they're
+import-only, used from `QuranImportController`/`HadithImportController` and the admin-ui import
+screens (`views/quran-import/`, `views/hadith-import/`). Each keeps a singleton cursor row
 (`QuranImportCursor`, `HadithImportCursor`) to resume sequential imports across runs.
 
 ### Shared infra

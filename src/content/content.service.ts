@@ -6,6 +6,7 @@ import { AuditService } from '../audit/audit.service';
 import { paginate, type PaginatedResponse } from '../common/dto/pagination.dto';
 import { toJsonFieldInput } from '../common/utils/prisma-json';
 import { PrismaService } from '../prisma/prisma.service';
+import { ContentChecksumService } from './content-checksum.service';
 import { ContentValidationService } from './content-validation.service';
 import { contentNotFound, contentUpdateConflict, invalidStatusTransition } from './content.errors';
 import {
@@ -91,6 +92,7 @@ export class ContentService {
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
     private readonly validationService: ContentValidationService,
+    private readonly checksumService: ContentChecksumService,
   ) {}
 
   async create(dto: CreateContentDto, requestId: string): Promise<ContentDetail> {
@@ -120,6 +122,75 @@ export class ContentService {
         metadata: {
           after: statusMetadata(content.status, content.version),
           type: content.type,
+        },
+      });
+
+      return content.id;
+    });
+
+    return this.getById(contentId);
+  }
+
+  /** Used only by the import services (`HadithImportService`, `QuranImportService`) — creates
+   * content already `APPROVED`, gated by the same strict `validateForApproval` rules and
+   * checksum computation a human approval would apply, never passing through an intermediate
+   * `DRAFT`/`IN_REVIEW` row. Manual creation (`create()` above) is untouched by this method. */
+  async createApproved(dto: CreateContentDto, requestId: string): Promise<ContentDetail> {
+    const payload = await this.validationService.validateForApproval({
+      type: dto.type,
+      payload: dto.payload,
+      sources: dto.sources,
+    });
+
+    const sourcesData = dto.sources.map(sourceCreateData);
+    const checksum = this.checksumService.calculate({
+      type: dto.type,
+      locale: dto.locale,
+      title: dto.title ?? null,
+      payload,
+      version: 1,
+      sources: sourcesData.map((source, index) => ({ ...source, sortOrder: index })),
+    });
+
+    const contentId = await this.prisma.$transaction(async (transaction) => {
+      const content = await transaction.contentItem.create({
+        data: {
+          type: dto.type,
+          locale: dto.locale,
+          title: dto.title,
+          payload,
+          status: ContentStatus.APPROVED,
+          reviewerId: dto.createdBy,
+          approvedAt: new Date(),
+          contentChecksum: checksum,
+          createdBy: dto.createdBy,
+          updatedBy: dto.createdBy,
+          sources: { create: sourcesData },
+        },
+      });
+
+      await this.auditService.record(transaction, {
+        actorId: dto.createdBy,
+        action: AuditAction.CONTENT_CREATED,
+        entityType: AuditEntityType.CONTENT,
+        entityId: content.id,
+        requestId,
+        metadata: {
+          after: statusMetadata(content.status, content.version),
+          type: content.type,
+        },
+      });
+      await this.auditService.record(transaction, {
+        actorId: dto.createdBy,
+        action: AuditAction.CONTENT_APPROVED,
+        entityType: AuditEntityType.CONTENT,
+        entityId: content.id,
+        requestId,
+        metadata: {
+          after: { status: ContentStatus.APPROVED },
+          contentChecksum: checksum,
+          version: content.version,
+          autoApproved: true,
         },
       });
 

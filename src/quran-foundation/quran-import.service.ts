@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ContentService } from '../content/content.service';
 import { SURAH_AYAH_COUNTS } from '../content/content-validation.service';
+import { describeContentValidationFailure } from '../content/content.errors';
 import type { CreateContentDto } from '../content/dto/create-content.dto';
 import { hasText } from '../common/utils/text';
 import { formatQuranReference } from '../common/utils/quran-reference';
@@ -32,8 +33,9 @@ export interface ImportOptions {
 /**
  * Admin-triggered only (`QuranImportController`) — never called from the scheduler or delivery
  * path (PLAN.md §2.1). Pulls the next verses in sequential Mushaf order from Quran.Foundation
- * and creates them as DRAFT `AYAH` `ContentItem`s through the existing review pipeline; nothing
- * here bypasses `ContentService.create()`'s validation or auto-approves anything.
+ * and creates them as `AYAH` `ContentItem`s already `APPROVED` via
+ * `ContentService.createApproved()` — gated by the same strict approval-grade validation a human
+ * reviewer would apply, but without the manual DRAFT → IN_REVIEW → APPROVED steps.
  */
 @Injectable()
 export class QuranImportService {
@@ -71,7 +73,9 @@ export class QuranImportService {
           result.created.push({ contentId, surahNumber: next.surah, ayahNumber: next.ayah });
         }
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Unknown import error';
+        const message =
+          describeContentValidationFailure(error) ??
+          (error instanceof Error ? error.message : 'Unknown import error');
         this.logger.error(`Failed to import ${next.surah}:${next.ayah}: ${message}`);
         result.errors.push({ surahNumber: next.surah, ayahNumber: next.ayah, message });
       }
@@ -204,7 +208,7 @@ export class QuranImportService {
       createdBy: actorId,
     };
 
-    const content = await this.contentService.create(dto, requestId);
+    const content = await this.contentService.createApproved(dto, requestId);
     return content.id;
   }
 }

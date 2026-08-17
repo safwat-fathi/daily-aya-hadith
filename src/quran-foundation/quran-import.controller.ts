@@ -16,7 +16,7 @@ export class QuranImportController {
   @Post('import')
   @ApiOperation({
     summary:
-      'Import the next N verses from Quran.Foundation, in sequential Mushaf order, as draft AYAH content awaiting review',
+      'Import the next N verses from Quran.Foundation, in sequential Mushaf order, as AYAH content stored already approved',
   })
   @ApiCreatedResponse({ type: QuranImportResponseDto })
   import(

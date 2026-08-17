@@ -11,7 +11,7 @@
   <% } else { %>
     <p class="muted">Could not determine the next position — check that HADITH_API_KEY is configured.</p>
   <% } %>
-  <p class="hint">Imports only Sahih and Hasan graded hadiths, cycling through all collections, skipping any hadith with no English text. Imported items are draft Hadith content and still need to be reviewed and approved before they can be delivered — nothing here sends anything or bypasses review (PLAN.md §2.1).</p>
+  <p class="hint">Imports only Sahih and Hasan graded hadiths, cycling through all collections, skipping any hadith with no English text. Imported items are stored already approved — validated against the same strict rules a human approval would apply. A hadith that fails that validation (e.g. missing Arabic text) is reported as an error instead of being created.</p>
 </div>
 
 <form method="POST" action="/api/v1/admin/hadith-import" class="card">

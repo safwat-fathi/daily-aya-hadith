@@ -128,6 +128,6 @@ export class QuranImportUiController {
       setFlash(request, 'error', extractErrorMessage(error));
     }
 
-    response.redirect('/api/v1/admin/content?status=DRAFT&type=AYAH');
+    response.redirect('/api/v1/admin/content?status=APPROVED&type=AYAH');
   }
 }
