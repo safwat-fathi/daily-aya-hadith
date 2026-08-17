@@ -1,61 +1,242 @@
 <!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title><%= title %></title>
-  <link rel="stylesheet" href="/admin.css" />
-  <style>
-    .landing-card {
-      max-width: 600px;
-      margin: 4rem auto;
-      padding: 2rem;
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Daily Aya & Hadith for Slack</title>
+    <meta name="description" content="Aya & Hadith Slack bot. Get a carefully selected Aya and Hadith delivered straight to your Slack channel every day." />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://example.com/" />
+    <meta property="og:title" content="Daily Aya & Hadith for Slack" />
+    <meta property="og:description" content="Aya & Hadith Slack bot. Get a carefully selected Aya and Hadith delivered straight to your Slack channel every day." />
+    <meta property="og:image" content="https://example.com/banner.jpg" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://example.com/" />
+    <meta property="twitter:title" content="Daily Aya & Hadith for Slack" />
+    <meta property="twitter:description" content="Aya & Hadith Slack bot. Get a carefully selected Aya and Hadith delivered straight to your Slack channel every day." />
+    <meta property="twitter:image" content="https://example.com/banner.jpg" />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Aya & Hadith Slack Bot",
+      "operatingSystem": "Slack",
+      "applicationCategory": "UtilitiesApplication",
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "5.0",
+        "ratingCount": "1"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      }
     }
-    .landing-card h1 {
-      margin-top: 0;
-      color: var(--brand);
-    }
-    .landing-card p {
-      line-height: 1.6;
-      color: var(--text);
-    }
-    .call-to-action {
-      margin-top: 2rem;
-      padding-top: 1rem;
-      border-top: 1px solid var(--border);
-    }
-    .button-primary {
-      display: inline-block;
-      margin-top: 1rem;
-      padding: 0.75rem 1.5rem;
-      background: var(--brand);
-      color: white;
-      text-decoration: none;
-      border-radius: 4px;
-      font-weight: 600;
-    }
-    .button-primary:hover {
-      background: var(--brand-hover);
-    }
-  </style>
-</head>
-<body class="login-page">
-  <div class="card landing-card">
-    <h1>Aya & Hadith Bot</h1>
-    <p>
-      Welcome to the Aya & Hadith Slack bot! This service delivers carefully selected, human-reviewed Islamic content directly to you in a daily direct message.
-    </p>
-    <p>
-      <strong>How it works:</strong> We use a rotating delivery schedule. One day you will receive an inspiring Quranic Aya, and the following day you will receive a meaningful Hadith.
-    </p>
-    <div class="call-to-action">
-      <h2>How to use it</h2>
-      <p>
-        To start receiving daily messages, simply send a direct message to the bot in Slack with the command:
-        <br><code>/subscribe</code>
-      </p>
-      <a href="/api/v1/slack/install" class="button-primary">Add to Slack</a>
+    </script>
+
+    <script>
+      const savedLang = localStorage.getItem('preferred_lang') || 'ar';
+      document.documentElement.setAttribute('data-active-lang', savedLang);
+      document.documentElement.lang = savedLang;
+      document.documentElement.dir = savedLang === 'ar' ? 'rtl' : 'ltr';
+
+      function setLanguage(lang) {
+        localStorage.setItem('preferred_lang', lang);
+        document.documentElement.setAttribute('data-active-lang', lang);
+        document.documentElement.lang = lang;
+        document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+      }
+    </script>
+    <style>
+      [data-active-lang='en'] [data-lang='ar'] {
+        display: none !important;
+      }
+      [data-active-lang='ar'] [data-lang='en'] {
+        display: none !important;
+      }
+      [data-lang='ar'] {
+        font-family: 'IBM Plex Sans Arabic', sans-serif;
+      }
+    </style>
+  </head>
+  <body
+    class="bg-gray-50 min-h-screen flex flex-col relative text-gray-800"
+  >
+    <!-- Language Toggle -->
+    <div
+      class="absolute top-4 right-4 flex gap-2 text-gray-600 bg-white px-3 py-1 rounded-full shadow-sm"
+      dir="ltr"
+      style="left: auto; right: 1rem"
+    >
+      <button
+        onclick="setLanguage('en')"
+        class="text-sm font-medium hover:text-emerald-600 focus:outline-none"
+      >
+        English
+      </button>
+      <span class="text-gray-300">|</span>
+      <button
+        onclick="setLanguage('ar')"
+        class="text-sm font-medium hover:text-emerald-600 focus:outline-none"
+      >
+        العربية
+      </button>
     </div>
-  </div>
-</body>
+
+    <main class="flex-grow flex flex-col items-center justify-center p-6">
+      <div class="max-w-2xl w-full bg-white rounded-2xl shadow-xl p-8 md:p-12 mt-12 mb-8">
+        <div class="mb-6 flex justify-center">
+          <div
+            class="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 text-3xl shadow-sm"
+          >
+            📖
+          </div>
+        </div>
+
+        <!-- English Content -->
+        <div data-lang="en" class="text-center">
+          <h1 class="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4 tracking-tight">
+            Daily Aya & Hadith
+          </h1>
+          <p class="text-lg text-gray-600 mb-8 leading-relaxed">
+            Enhance your workspace with daily spiritual reminders. Get a carefully selected, human-reviewed Aya and
+            Hadith delivered straight to your Slack DM every day.
+          </p>
+          
+          <div class="bg-gray-50 rounded-xl p-6 text-left mb-8 border border-gray-200">
+            <h2 class="text-xl font-bold text-gray-900 mb-3">How it works</h2>
+            <p class="text-gray-600 leading-relaxed mb-4">
+              We use a rotating delivery schedule. One day you will receive an inspiring Quranic Aya, and the following day you will receive a meaningful Hadith. 
+              Everything is delivered via direct message, so it's private and personal.
+            </p>
+            <a
+              href="/api/v1/slack/install"
+              class="inline-flex items-center justify-center gap-2 bg-emerald-600 text-white font-semibold px-6 py-3 rounded-lg shadow-sm hover:bg-emerald-700 transition-all duration-200 w-full sm:w-auto"
+            >
+              Add to Slack
+            </a>
+          </div>
+
+          <div class="text-left">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">Available Commands</h2>
+            <ul class="space-y-3">
+              <li class="flex items-start">
+                <code class="bg-gray-100 text-emerald-700 px-2 py-1 rounded font-mono text-sm mr-3">/subscribe</code>
+                <span class="text-gray-600">Opt-in to start receiving daily messages.</span>
+              </li>
+              <li class="flex items-start">
+                <code class="bg-gray-100 text-emerald-700 px-2 py-1 rounded font-mono text-sm mr-3">/unsubscribe</code>
+                <span class="text-gray-600">Stop receiving daily messages.</span>
+              </li>
+              <li class="flex items-start">
+                <code class="bg-gray-100 text-emerald-700 px-2 py-1 rounded font-mono text-sm mr-3">/settings</code>
+                <span class="text-gray-600">Configure your timezone and preferences.</span>
+              </li>
+              <li class="flex items-start">
+                <code class="bg-gray-100 text-emerald-700 px-2 py-1 rounded font-mono text-sm mr-3">/aya</code>
+                <span class="text-gray-600">Request a random Aya immediately.</span>
+              </li>
+              <li class="flex items-start">
+                <code class="bg-gray-100 text-emerald-700 px-2 py-1 rounded font-mono text-sm mr-3">/hadith</code>
+                <span class="text-gray-600">Request a random Hadith immediately.</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Arabic Content -->
+        <div data-lang="ar" class="text-center">
+          <h1 class="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4 tracking-tight">
+            آية وحديث كل يوم
+          </h1>
+          <p class="text-lg text-gray-600 mb-8 leading-relaxed">
+            أضف طابعاً روحانياً لبيئة عملك. احصل على آية وحديث مختارين بعناية يصلان مباشرة إلى قناتك
+            على سلاك كل يوم.
+          </p>
+
+          <div class="bg-gray-50 rounded-xl p-6 text-right mb-8 border border-gray-200">
+            <h2 class="text-xl font-bold text-gray-900 mb-3">كيف يعمل البوت؟</h2>
+            <p class="text-gray-600 leading-relaxed mb-4">
+              نستخدم جدول إرسال متناوب. ستحصل في أحد الأيام على آية قرآنية ملهمة، وفي اليوم التالي ستحصل على حديث شريف.
+              يتم إرسال جميع الرسائل عبر الرسائل المباشرة لضمان خصوصيتك.
+            </p>
+            <a
+              href="/api/v1/slack/install"
+              class="inline-flex items-center justify-center gap-2 bg-emerald-600 text-white font-semibold px-6 py-3 rounded-lg shadow-sm hover:bg-emerald-700 transition-all duration-200 w-full sm:w-auto"
+            >
+              أضف إلى سلاك
+            </a>
+          </div>
+
+          <div class="text-right">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">الأوامر المتاحة</h2>
+            <ul class="space-y-3">
+              <li class="flex items-start justify-start flex-row-reverse">
+                <code class="bg-gray-100 text-emerald-700 px-2 py-1 rounded font-mono text-sm mr-0 ml-3" dir="ltr">/subscribe</code>
+                <span class="text-gray-600">اشترك لبدء تلقي الرسائل اليومية.</span>
+              </li>
+              <li class="flex items-start justify-start flex-row-reverse">
+                <code class="bg-gray-100 text-emerald-700 px-2 py-1 rounded font-mono text-sm mr-0 ml-3" dir="ltr">/unsubscribe</code>
+                <span class="text-gray-600">إلغاء الاشتراك وإيقاف الرسائل.</span>
+              </li>
+              <li class="flex items-start justify-start flex-row-reverse">
+                <code class="bg-gray-100 text-emerald-700 px-2 py-1 rounded font-mono text-sm mr-0 ml-3" dir="ltr">/settings</code>
+                <span class="text-gray-600">ضبط المنطقة الزمنية والتفضيلات.</span>
+              </li>
+              <li class="flex items-start justify-start flex-row-reverse">
+                <code class="bg-gray-100 text-emerald-700 px-2 py-1 rounded font-mono text-sm mr-0 ml-3" dir="ltr">/aya</code>
+                <span class="text-gray-600">طلب آية قرآنية فوراً.</span>
+              </li>
+              <li class="flex items-start justify-start flex-row-reverse">
+                <code class="bg-gray-100 text-emerald-700 px-2 py-1 rounded font-mono text-sm mr-0 ml-3" dir="ltr">/hadith</code>
+                <span class="text-gray-600">طلب حديث شريف فوراً.</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full bg-white border-t border-gray-200 py-8">
+      <div class="max-w-4xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div class="text-gray-500 text-sm">
+          <span data-lang="en">© 2026 Aya & Hadith Bot. All rights reserved.</span>
+          <span data-lang="ar">© 2026 بوت آية وحديث. جميع الحقوق محفوظة.</span>
+        </div>
+        <div class="flex gap-6 text-sm text-gray-500">
+          <a href="/install.html" class="hover:text-emerald-600 transition-colors">
+            <span data-lang="en">Installation</span>
+            <span data-lang="ar">الرئيسية</span>
+          </a>
+          <a href="/privacy.html" class="hover:text-emerald-600 transition-colors">
+            <span data-lang="en">Privacy</span>
+            <span data-lang="ar">الخصوصية</span>
+          </a>
+          <a href="/tos.html" class="hover:text-emerald-600 transition-colors">
+            <span data-lang="en">Terms</span>
+            <span data-lang="ar">الشروط</span>
+          </a>
+          <a href="/support.html" class="hover:text-emerald-600 transition-colors">
+            <span data-lang="en">Support</span>
+            <span data-lang="ar">الدعم الفني</span>
+          </a>
+        </div>
+      </div>
+    </footer>
+  </body>
 </html>
