@@ -1,17 +1,17 @@
 <%- include('../_layout/_header', { title, activeNav, flash }) %>
 
 <div class="page-header">
-  <h1>Import from hadithapi.com</h1>
+  <h1>Import from HadeethEnc</h1>
 </div>
 
 <div class="card">
   <% if (next) { %>
-    <p>Next up: <strong><%= next.collectionArabic %></strong> (<%= next.collectionEnglish %>) — <%= next.status %>, page <%= next.page %>, item <%= next.itemIndex + 1 %></p>
-    <p class="hint">The exact hadith at this position isn't known until import runs — an empty or 404 combo at this position is skipped forward automatically.</p>
+    <p>Next up: category <strong><%= next.categoryTitleArabic %></strong> (<%= next.categoryTitleEnglish %>) — page <%= next.page %>, item <%= next.itemIndex + 1 %></p>
+    <p class="hint">The exact hadith at this position isn't known until import runs — an empty page at this position is skipped forward automatically.</p>
   <% } else { %>
-    <p class="muted">Could not determine the next position — check that HADITH_API_KEY is configured.</p>
+    <p class="muted">Could not reach HadeethEnc to determine the next position — check connectivity and try again.</p>
   <% } %>
-  <p class="hint">Imports only Sahih and Hasan graded hadiths, cycling through all collections, skipping any hadith with no English text. Imported items are stored already approved — validated against the same strict rules a human approval would apply. A hadith that fails that validation (e.g. missing Arabic text) is reported as an error instead of being created.</p>
+  <p class="hint">Imports Arabic+English hadiths from HadeethEnc's full category tree, skipping any hadith missing an English translation and any hadith whose own grade is flagged as weak or disputed. Imported items are stored already approved — validated against the same strict rules a human approval would apply. A hadith that fails that validation (e.g. missing Arabic text) is reported as an error instead of being created.</p>
 </div>
 
 <form method="POST" action="/api/v1/admin/hadith-import" class="card">

@@ -16,7 +16,7 @@ export class HadithImportController {
   @Post('import')
   @ApiOperation({
     summary:
-      'Import the next N Sahih/Hasan hadiths from hadithapi.com, in book/status/page order, as HADITH content stored already approved',
+      'Import the next N Arabic+English hadiths from HadeethEnc (hadeethenc.com), walking its category tree, as HADITH content stored already approved (weak/disputed grades are skipped)',
   })
   @ApiCreatedResponse({ type: HadithImportResponseDto })
   import(

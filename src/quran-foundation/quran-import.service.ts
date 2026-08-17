@@ -7,7 +7,7 @@ import { hasText } from '../common/utils/text';
 import { formatQuranReference } from '../common/utils/quran-reference';
 import { ContentStatus, ContentType, SourceType } from '../generated/prisma/enums';
 import { PrismaService } from '../prisma/prisma.service';
-import { clampToPayloadLimit } from './html-text';
+import { clampToPayloadLimit } from '../common/utils/clamp-text';
 import { QuranFoundationClient } from './quran-foundation.client';
 import { SURAH_NAMES } from './surah-names';
 import { nextVerseAfter, type ImportCursorPosition } from './verse-sequence';

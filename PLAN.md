@@ -21,7 +21,7 @@ The bot must support:
 2. Hadith with verification and a concise explanation.
 3. Short stories from the lives of the Companions.
 4. Reminders about the countless blessings of Allah.
-5. Human review and approval before any manually-authored content can be sent — content pulled in via the controlled Quran Foundation/hadithapi.com imports (§14.2) is the one exception, stored already approved.
+5. Human review and approval before any manually-authored content can be sent — content pulled in via the controlled Quran Foundation/HadeethEnc imports (§14.2) is the one exception, stored already approved.
 6. Reliable scheduling without duplicate deliveries.
 7. Clear Slack Block Kit formatting.
 8. An admin API for managing content, schedules, subscriptions, previews, and delivery history.
@@ -271,6 +271,9 @@ type HadithPayload = {
   grade?: string;
   grader?: string;
   conciseExplanation?: string;
+  conciseExplanationTranslation?: string;
+  lessons?: string[];
+  lessonsTranslation?: string[];
   reflection?: string;
   practicalAction?: string;
 };
@@ -692,6 +695,7 @@ Arabic hadith text
 
 Narrator and collection reference
 Concise explanation
+Lessons
 Reflection
 Practical action
 Sources
@@ -1939,7 +1943,7 @@ Store a renderer version string, such as:
 
 ```text
 ayah-v1
-hadith-v1
+hadith-v2
 companion-story-v1
 blessing-reminder-v1
 ```
@@ -1966,7 +1970,7 @@ A separate import script may:
 - Never auto-approve imported content unless the source file itself is a signed, reviewer-approved release artifact and the process is explicitly configured.
 
 **Superseded for the two implemented importers.** `QuranImportService` and `HadithImportService`
-(`src/quran-foundation/`, `src/hadith-api/`) pull directly from Quran.Foundation and hadithapi.com
+(`src/quran-foundation/`, `src/hadith-api/`) pull directly from Quran.Foundation and HadeethEnc
 rather than from a reviewed local file, and — per a confirmed, deliberate policy decision — create
 content via `ContentService.createApproved()`, which runs the same strict approval-grade validation
 `ReviewService.approve()` applies (required fields per type, required source, checksum) and inserts
@@ -2158,7 +2162,7 @@ row counts, constraint enforcement, audit rows, and rollback after a failed requ
 
 Automated checks could not verify theological correctness in any case. Human review remains
 mandatory for manually-authored content, and the reviewer is responsible for text, citations,
-grading, and attribution. Content imported from Quran Foundation/hadithapi.com (§14.2) is the
+grading, and attribution. Content imported from Quran Foundation/HadeethEnc (§14.2) is the
 one exception — it skips human review and relies on the upstream API plus the same mechanical
 approval-grade validation described below. Verification here is limited to the mechanical
 guarantees: required source fields are present, Quran references are structurally valid, an
@@ -2588,7 +2592,7 @@ Use:
 
 The most important correctness rule is:
 
-> No content is delivered unless it is locally stored, source-referenced, approved (by a human reviewer for manually-authored content, or automatically via the same strict validation for Quran Foundation/hadithapi.com imports — §14.2), selected through an idempotent delivery transaction, and successfully accepted by Slack.
+> No content is delivered unless it is locally stored, source-referenced, approved (by a human reviewer for manually-authored content, or automatically via the same strict validation for Quran Foundation/HadeethEnc imports — §14.2), selected through an idempotent delivery transaction, and successfully accepted by Slack.
 
 ---
 

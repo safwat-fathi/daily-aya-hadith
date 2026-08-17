@@ -95,6 +95,9 @@ export function buildPayloadFromForm(type: ContentType, raw: unknown): Record<st
         grade: str(body.grade),
         grader: str(body.grader),
         conciseExplanation: str(body.conciseExplanation),
+        conciseExplanationTranslation: str(body.conciseExplanationTranslation),
+        lessons: strArray(body.lessons),
+        lessonsTranslation: strArray(body.lessonsTranslation),
         reflection: str(body.reflection),
         practicalAction: str(body.practicalAction),
       };

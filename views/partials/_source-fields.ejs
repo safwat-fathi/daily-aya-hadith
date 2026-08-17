@@ -29,6 +29,11 @@
           <label>URL</label>
           <input type="url" name="sources[<%= sourceIndex %>][url]" value="<%= source.url || '' %>" />
         </div>
+        <!-- No visible control for notes (e.g. the raw citation text HadeethEnc imports store
+             here) — this hidden field only exists so saving the form doesn't silently wipe it;
+             without it, buildSourcesFromForm() would rebuild this row with notes: undefined on
+             every edit, since no input here ever carried it. -->
+        <input type="hidden" name="sources[<%= sourceIndex %>][notes]" value="<%= source.notes || '' %>" />
       </div>
 
       <div class="source-quran-fields" data-source-quran <%= isQuran ? '' : 'hidden' %>>

@@ -14,10 +14,10 @@ import {
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 const SHORT_TEXT_MAX_LENGTH = 500;
-// Exported for src/quran-foundation/html-text.ts, which must clamp imported translation/tafsir
-// text to this same bound before it reaches ContentService.create() — Quran.Foundation tafsir
-// text can run tens of thousands of characters (confirmed live against Ibn Kathir), far past
-// what fits here.
+// Exported for src/common/utils/clamp-text.ts, which must clamp imported translation/tafsir/
+// explanation text to this same bound before it reaches ContentService.create() — e.g.
+// Quran.Foundation tafsir text can run tens of thousands of characters (confirmed live against
+// Ibn Kathir), far past what fits here.
 export const LONG_TEXT_MAX_LENGTH = 10_000;
 
 export class WordMeaningDto {
@@ -185,6 +185,28 @@ export class HadithPayloadDto {
   @IsString()
   @MaxLength(LONG_TEXT_MAX_LENGTH)
   conciseExplanation?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(LONG_TEXT_MAX_LENGTH)
+  conciseExplanationTranslation?: string;
+
+  @ApiPropertyOptional({ type: [String], maxItems: 20 })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(20)
+  @IsString({ each: true })
+  @MaxLength(LONG_TEXT_MAX_LENGTH, { each: true })
+  lessons?: string[];
+
+  @ApiPropertyOptional({ type: [String], maxItems: 20 })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(20)
+  @IsString({ each: true })
+  @MaxLength(LONG_TEXT_MAX_LENGTH, { each: true })
+  lessonsTranslation?: string[];
 
   @ApiPropertyOptional()
   @IsOptional()

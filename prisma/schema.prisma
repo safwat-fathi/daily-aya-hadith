@@ -322,19 +322,22 @@ model QuranImportCursor {
   updatedAt       DateTime @updatedAt
 }
 
-/// Tracks how far the hadithapi.com import (src/hadith-api/) has advanced through the
-/// book x status x page x item walk. Single row, keyed by a fixed id. bookIndex/statusIndex
-/// index into the fixed BOOK_SLUGS/HADITH_STATUSES arrays in hadith-collections.ts; page/
-/// itemIndex are the NEXT position to fetch, not the last one processed — unlike
-/// QuranImportCursor, whose walk is a pure function of static data, this walk depends on live
-/// pagination metadata, so the cursor stores the target position directly.
+/// Tracks how far the HadeethEnc import (src/hadith-api/) has advanced through its category
+/// tree. Single row, keyed by a fixed id. `categoryId` is the HadeethEnc category id currently
+/// being walked — NOT an index: the category list is fetched live on every import call and can
+/// be restructured upstream, so storing a position-independent id, then re-locating it in a
+/// fresh fetch on each advance, is what survives that (unlike the bookIndex/statusIndex this
+/// replaces, which indexed a fixed array and would have desynced silently on reorder). `""`
+/// means "nothing imported yet, start at the first id in a fresh fetch" — same `""`-as-sentinel
+/// convention used elsewhere in this codebase (VerseOverrides.translationResourceId). page/
+/// itemIndex are the NEXT position to fetch within that category, not the last one processed —
+/// same live-pagination-dependent reasoning as the cursor this replaces.
 model HadithImportCursor {
-  id          String   @id @default("singleton")
-  bookIndex   Int      @default(0)
-  statusIndex Int      @default(0)
-  page        Int      @default(1)
-  itemIndex   Int      @default(0)
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default("singleton")
+  categoryId String   @default("")
+  page       Int      @default(1)
+  itemIndex  Int      @default(0)
+  updatedAt  DateTime @updatedAt
 }
 
 model AuditEvent {

@@ -134,7 +134,7 @@ commands bypass all of this and send immediately, outside any stream's cycle.
 ### Content import (admin-triggered only)
 
 `src/quran-foundation/` and `src/hadith-api/` pull content from external APIs
-(Quran.Foundation OAuth API; hadithapi.com) and create it via
+(Quran.Foundation OAuth API; HadeethEnc) and create it via
 `ContentService.createApproved()` — already `APPROVED`, gated by the same strict
 `validateForApproval` rules and checksum computation a human approval would apply (required
 fields per type, required source), but with no human review step. This is a deliberate policy

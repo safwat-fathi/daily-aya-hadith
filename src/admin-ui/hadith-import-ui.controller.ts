@@ -20,13 +20,13 @@ function clampCount(raw: unknown): number {
   return Math.min(MAX_COUNT, Math.max(MIN_COUNT, value));
 }
 
-function hadithLabel(item: { bookSlug: string; hadithNumber?: string }): string {
-  return item.hadithNumber ? `${item.bookSlug} #${item.hadithNumber}` : item.bookSlug;
+function hadithLabel(item: { categoryId: string; hadithId?: string }): string {
+  return item.hadithId ? `hadith ${item.hadithId} (category ${item.categoryId})` : item.categoryId;
 }
 
 function hadithErrorLabel(item: {
-  bookSlug: string;
-  hadithNumber?: string;
+  categoryId: string;
+  hadithId?: string;
   message: string;
 }): string {
   return `${hadithLabel(item)} (${item.message})`;
@@ -46,6 +46,13 @@ function summarize(result: HadithImportResult): string {
   if (result.skippedNoEnglish.length > 0) {
     parts.push(`Skipped ${result.skippedNoEnglish.map(hadithLabel).join(', ')} (no English text).`);
   }
+  if (result.skippedWeakGrade.length > 0) {
+    parts.push(
+      `Skipped ${result.skippedWeakGrade
+        .map((item) => `${hadithLabel(item)} (grade: ${item.grade})`)
+        .join(', ')} (weak/disputed grade).`,
+    );
+  }
   if (result.errors.length > 0) {
     parts.push(`Failed ${result.errors.map(hadithErrorLabel).join(', ')}.`);
   }
@@ -64,7 +71,7 @@ export class HadithImportUiController {
     const next: HadithImportPreview | null = await this.importService.peekNext().catch(() => null);
 
     response.render('hadith-import/index', {
-      title: 'Import from hadithapi.com',
+      title: 'Import from HadeethEnc',
       activeNav: 'hadith-import',
       flash: readFlash(request),
       next,

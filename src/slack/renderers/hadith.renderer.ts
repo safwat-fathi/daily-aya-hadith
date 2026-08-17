@@ -14,21 +14,27 @@ import {
   isPlainObject,
   joinParts,
   text,
+  textList,
 } from './slack-text';
 
 /**
  * `'ar'` (default) and `'en'` are the only two locales this renderer knows about — anything else
- * in `context.locale` renders as `'ar'`. `version` below stays `hadith-v1` for both, describing
- * the canonical `'ar'` render (README.md "Renderer versions"), which this leaves byte-identical.
- * `collection`/`book`/`narrator` have no stored translation and are not localized — they render
- * as stored (typically Arabic) regardless of locale.
+ * in `context.locale` renders as `'ar'`. `version` is `hadith-v2` (bumped from `hadith-v1` when
+ * the lessons bullets block was added — a block-structure change, not a wording one), describing
+ * the canonical `'ar'` render (README.md "Renderer versions"), which this leaves byte-identical
+ * for every field that already existed. `arabicText`/`translation`, `conciseExplanation`/
+ * `conciseExplanationTranslation`, and `lessons`/`lessonsTranslation` are the only locale-switched
+ * pairs — `en` reads the `*Translation` field, falling back to the Arabic one when absent.
+ * `collection`/`book`/`narrator`/`grade`/`grader` have no stored translation and are not
+ * localized — they render as stored (typically Arabic) regardless of locale.
  */
 const LABELS = {
   ar: {
     header: 'حديث اليوم',
     grade: 'الدرجة',
     translation: 'الترجمة',
-    explanation: 'شرح موجز',
+    explanation: 'شرح الحديث',
+    lessons: 'الدروس المستفادة',
     reflection: 'تأمل',
     practicalAction: 'عمل مقترح',
     hadithNumberPrefix: 'رقم',
@@ -37,7 +43,8 @@ const LABELS = {
     header: 'Hadith of the Day',
     grade: 'Grade',
     translation: 'Translation',
-    explanation: 'Concise Explanation',
+    explanation: 'Explanation',
+    lessons: 'Lessons',
     reflection: 'Reflection',
     practicalAction: 'Practical Action',
     hadithNumberPrefix: 'no.',
@@ -52,7 +59,7 @@ function localeFor(context: RenderContext): Locale {
 
 export class HadithRenderer implements ContentRenderer {
   readonly type = ContentType.HADITH;
-  readonly version = 'hadith-v1';
+  readonly version = 'hadith-v2';
 
   render(content: RenderableContent, context: RenderContext): RenderedSlackMessage {
     const locale = localeFor(context);
@@ -85,7 +92,19 @@ export class HadithRenderer implements ContentRenderer {
     if (locale === 'ar') {
       builder.labelled(labels.translation, text(payload.translation));
     }
-    builder.labelled(labels.explanation, text(payload.conciseExplanation));
+    const explanationAr = text(payload.conciseExplanation);
+    const explanationText =
+      locale === 'en'
+        ? (text(payload.conciseExplanationTranslation) ?? explanationAr)
+        : explanationAr;
+    builder.labelled(labels.explanation, explanationText);
+
+    const lessonsAr = textList(payload.lessons);
+    const lessonsTranslation = textList(payload.lessonsTranslation);
+    const lessonsList =
+      locale === 'en' && lessonsTranslation.length > 0 ? lessonsTranslation : lessonsAr;
+    builder.bullets(labels.lessons, lessonsList);
+
     builder.labelled(labels.reflection, text(payload.reflection));
     builder.labelled(labels.practicalAction, text(payload.practicalAction));
     builder.sources(content.sources);

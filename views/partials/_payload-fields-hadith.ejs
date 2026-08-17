@@ -31,9 +31,29 @@
   <input type="text" id="grader" name="payload[grader]" value="<%= payload.grader || '' %>" />
 </div>
 <div class="field">
-  <label for="conciseExplanation">Concise explanation</label>
+  <label for="conciseExplanation">Explanation (Arabic)</label>
   <textarea id="conciseExplanation" name="payload[conciseExplanation]"><%= payload.conciseExplanation || '' %></textarea>
 </div>
+<div class="field">
+  <label for="conciseExplanationTranslation">Explanation (English)</label>
+  <textarea id="conciseExplanationTranslation" name="payload[conciseExplanationTranslation]"><%= payload.conciseExplanationTranslation || '' %></textarea>
+</div>
+<fieldset>
+  <legend>Lessons — Arabic (up to 5 shown)</legend>
+  <% for (var lessonIndex = 0; lessonIndex < 5; lessonIndex++) { var lesson = (payload.lessons && payload.lessons[lessonIndex]) || ''; %>
+    <div class="field">
+      <input type="text" name="payload[lessons][]" value="<%= lesson %>" dir="rtl" />
+    </div>
+  <% } %>
+</fieldset>
+<fieldset>
+  <legend>Lessons — English (up to 5 shown)</legend>
+  <% for (var lessonTIndex = 0; lessonTIndex < 5; lessonTIndex++) { var lessonT = (payload.lessonsTranslation && payload.lessonsTranslation[lessonTIndex]) || ''; %>
+    <div class="field">
+      <input type="text" name="payload[lessonsTranslation][]" value="<%= lessonT %>" />
+    </div>
+  <% } %>
+</fieldset>
 <div class="field">
   <label for="reflection">Reflection</label>
   <textarea id="reflection" name="payload[reflection]"><%= payload.reflection || '' %></textarea>

@@ -208,14 +208,17 @@ Renderer guarantees:
 - A source URL becomes a link only when it parses as `http`/`https`; otherwise the citation is
   plain text and `render.url_not_linkable` is reported.
 
-Renderer versions (`ayah-v2`, `hadith-v1`, `companion-story-v1`, `blessing-reminder-v1`) are
+Renderer versions (`ayah-v2`, `hadith-v2`, `companion-story-v1`, `blessing-reminder-v1`) are
 returned with every preview and change only when block structure changes, never for wording.
 
 `AYAH`/`HADITH` also render in a second locale: every `DeliveryRun` stores both the canonical
 (stream-locale) snapshot and an `'en'` one (`renderedText`/`renderedBlocks` and `renderedTextEn`/
 `renderedBlocksEn`), and each subscriber's delivery picks the variant matching their own
 `UserSubscriber.locale` — see "Subscriber model" below. The `'en'` render leads with the stored
-`translation` field, falling back to the Arabic text when no translation is stored.
+`translation` field, falling back to the Arabic text when no translation is stored. `HADITH`'s
+explanation and lessons fields follow the same pattern: the `'en'` render prefers
+`conciseExplanationTranslation`/`lessonsTranslation`, falling back to the Arabic
+`conciseExplanation`/`lessons` when no translation is stored.
 `COMPANION_STORY`/`BLESSING_REMINDER` have no translation field and always render in Arabic.
 
 ## Subscriber model
