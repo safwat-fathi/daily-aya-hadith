@@ -1,27 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://example.com/</loc>
+    <loc>https://daily-aya-hadith.online/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://example.com/install.html</loc>
+    <loc>https://daily-aya-hadith.online/install.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://example.com/privacy.html</loc>
+    <loc>https://daily-aya-hadith.online/privacy.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://example.com/tos.html</loc>
+    <loc>https://daily-aya-hadith.online/tos.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://example.com/support.html</loc>
+    <loc>https://daily-aya-hadith.online/support.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
