@@ -13,7 +13,7 @@
         <% items.forEach(function (sub) { %>
           <tr>
             <td><a href="/api/v1/admin/subscribers/<%= sub.id %>"><%= sub.slackUserId %></a></td>
-            <td><%= sub.workspaceId %></td>
+            <td><%= workspaceNames[sub.workspaceId] || sub.workspaceId %></td>
             <td><%= sub.timezone %></td>
             <td><%= sub.locale %></td>
             <td><%= sub.isActive ? 'Yes' : 'No' %></td>

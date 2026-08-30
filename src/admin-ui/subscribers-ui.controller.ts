@@ -34,7 +34,14 @@ export class SubscribersUiController {
     @Req() request: Request,
     @Res() response: Response,
   ): Promise<void> {
-    const result = await this.subscribersService.list(query);
+    const [result, workspaces] = await Promise.all([
+      this.subscribersService.list(query),
+      this.workspacesService.list({ page: 1, limit: 100 }),
+    ]);
+
+    const workspaceNames = Object.fromEntries(
+      workspaces.items.map((ws) => [ws.id, ws.name]),
+    );
 
     response.render('subscribers/list', {
       title: 'Subscribers',
@@ -43,6 +50,7 @@ export class SubscribersUiController {
       items: result.items,
       pagination: result.pagination,
       basePath: `${BASE}?`,
+      workspaceNames,
     });
   }
 
