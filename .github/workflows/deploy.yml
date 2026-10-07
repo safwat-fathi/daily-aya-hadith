@@ -34,6 +34,7 @@ jobs:
         run: |
           ssh -i ~/.ssh/id_deploy "$SSH_USER@$SSH_HOST" "APP_DIR='$APP_DIR' bash -l -s" <<'EOF'
           set -euo pipefail
+          export PATH="$HOME/.nvm/versions/node/v22.22.3/bin:$PATH"
           cd "$APP_DIR"
           git fetch origin main
           git reset --hard origin/main
