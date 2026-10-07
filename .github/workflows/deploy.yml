@@ -1,0 +1,47 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Never run two deploys at once, and never cancel one mid-migration.
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Configure SSH
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
+
+      # Builds on the server: .env.production and the PM2 process live there.
+      - name: Deploy over SSH
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          APP_DIR: ${{ secrets.APP_DIR }}
+        run: |
+          ssh -i ~/.ssh/id_deploy "$SSH_USER@$SSH_HOST" "APP_DIR='$APP_DIR' bash -l -s" <<'EOF'
+          set -euo pipefail
+          cd "$APP_DIR"
+          git fetch origin main
+          git reset --hard origin/main
+          pnpm install --frozen-lockfile
+          pnpm db:migrate
+          pnpm build
+          pm2 reload ecosystem.config.js --update-env
+          EOF
+
+      - name: Smoke check
+        run: curl -fsS --retry 5 --retry-delay 3 --retry-connrefused https://daily-aya-hadith.online/health/live
