@@ -21,6 +21,11 @@ export function configureApplication(app: NestExpressApplication): void {
       { path: '', method: RequestMethod.GET },
       { path: 'health/live', method: RequestMethod.GET },
       { path: 'health/ready', method: RequestMethod.GET },
+      // Public legal/support pages must live at the root: the footer, sitemap and Google index
+      // them as /privacy, /tos, /support (not /api/v1/...).
+      { path: 'privacy', method: RequestMethod.GET },
+      { path: 'tos', method: RequestMethod.GET },
+      { path: 'support', method: RequestMethod.GET },
     ],
   });
   app.useGlobalPipes(

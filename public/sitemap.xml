@@ -6,23 +6,18 @@
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://daily-aya-hadith.online/install.html</loc>
+    <loc>https://daily-aya-hadith.online/support</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://daily-aya-hadith.online/privacy.html</loc>
+    <loc>https://daily-aya-hadith.online/privacy</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://daily-aya-hadith.online/tos.html</loc>
+    <loc>https://daily-aya-hadith.online/tos</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>https://daily-aya-hadith.online/support.html</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
   </url>
 </urlset>

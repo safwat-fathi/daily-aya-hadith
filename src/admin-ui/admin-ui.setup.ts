@@ -1,4 +1,5 @@
 import { join } from 'node:path';
+import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import connectPgSimple from 'connect-pg-simple';
@@ -28,6 +29,9 @@ export function configureAdminUiViews(app: NestExpressApplication): void {
   // (prisma/schema.prisma's `Session` model, migrated like any other table) rather than going
   // through Prisma.
   const pool = new Pool({ connectionString: config.get('DATABASE_URL', { infer: true }) });
+
+  // An idle-client error with no listener is an unhandled 'error' event and crashes the process.
+  pool.on('error', (error: Error) => Logger.error(`Session pool error: ${error.message}`));
 
   app.use(
     session({
